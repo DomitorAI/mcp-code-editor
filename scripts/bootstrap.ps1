@@ -64,10 +64,10 @@ if (Test-Path -LiteralPath $exePath) {
   Write-Step "exe already present (skipping download): $exePath"
 }
 else {
-  $zip = Join-Path $env:TEMP "mcp-code-editor-$Version.zip"
+  $zip = Join-Path $env:TEMP 'mcp-code-editor-latest.zip'
   Write-Step "downloading exe: $ExeUrl"
   Save-File $ExeUrl $zip
-  $extract = Join-Path $env:TEMP "mcp-code-editor-$Version"
+  $extract = Join-Path $env:TEMP 'mcp-code-editor-latest'
   if (Test-Path -LiteralPath $extract) {
     Remove-Item -LiteralPath $extract -Recurse -Force
   }
