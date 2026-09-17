@@ -1,0 +1,37 @@
+name: Bug report
+description: Report a problem with the app, the MCP server, the tunnel or the install script.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what actually happened.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start the app, pick project...
+        2. Connect the chat to the endpoint...
+        3. Ask the agent to...
+    validations:
+      required: false
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      placeholder: Windows version (10/11), app version (v1.0.0), client (claude.ai web / local MCP client), access mode (Read-Write / Read-only)
+    validations:
+      required: false
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant output
+      description: The Status line from the app, and/or the audit.log lines for the failing operation.
+      render: shell
+    validations:
+      required: false

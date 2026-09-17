@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mcp-code-editor — let your AI agent edit, build and test your project</title>
+<meta name="description" content="Local MCP server with OAuth 2.1 + PKCE: your AI agent (claude.ai or any MCP client) reads, edits, builds and tests your project directly on disk. One line to install on Windows.">
+<style>
+  :root { --bg:#0b0f14; --panel:#11161d; --text:#e6edf3; --muted:#8b949e; --accent:#4da3ff; --line:#21262d; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,-apple-system,sans-serif; line-height:1.6; }
+  main { max-width:960px; margin:0 auto; padding:40px 20px 56px; }
+  .hero { text-align:center; }
+  .hero img { width:100%; max-width:860px; border-radius:12px; margin-top:24px; }
+  h1 { font-size:2.1rem; margin-top:28px; }
+  .tagline { color:var(--muted); font-size:1.12rem; max-width:740px; margin:10px auto 0; }
+  .oneliner { display:flex; gap:8px; justify-content:center; align-items:stretch; margin:30px auto 4px; max-width:780px; }
+  .oneliner code { flex:1; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:13px 15px; font-size:.92rem; overflow-x:auto; white-space:nowrap; color:#9ecbff; text-align:left; }
+  button { cursor:pointer; font:inherit; }
+  .btn { background:var(--accent); border:none; border-radius:8px; color:#04121f; padding:10px 18px; font-weight:600; text-decoration:none; display:inline-block; }
+  .btn:hover { filter:brightness(1.12); }
+  .btn-ghost { background:transparent; border:1px solid var(--line); color:var(--text); }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  section { margin-top:48px; }
+  h2 { font-size:1.35rem; margin-bottom:16px; }
+  .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
+  .step { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  .step b { display:block; margin-bottom:6px; color:var(--accent); font-size:.85rem; letter-spacing:.06em; text-transform:uppercase; }
+  .step p { color:var(--muted); font-size:.95rem; }
+  .stats { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
+  .stat { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px 34px; text-align:center; min-width:170px; }
+  .stat .num { font-size:1.9rem; font-weight:700; }
+  .stat .lbl { color:var(--muted); font-size:.9rem; }
+  .tools { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; }
+  .tool { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 14px; font-size:.92rem; }
+  .tool code { color:#9ecbff; }
+  .feedback-row { display:flex; gap:12px; flex-wrap:wrap; }
+  footer { margin-top:56px; color:var(--muted); font-size:.88rem; text-align:center; border-top:1px solid var(--line); padding-top:20px; }
+  footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <img src="../assets/logo-banner.png" alt="mcp-code-editor">
+    <h1>mcp-code-editor</h1>
+    <p class="tagline">Your AI agent — claude.ai or any MCP client — reads, edits, builds and tests your project <strong style="color:var(--text)">directly on disk</strong>. Local MCP server, OAuth 2.1 + PKCE, automatic HTTPS tunnel. One line to install, and the agent never commits or pushes — you decide.</p>
+    <div class="oneliner">
+      <code id="cmd">irm https://raw.githubusercontent.com/DomitorAI/mcp-code-editor/main/scripts/bootstrap.ps1 | iex</code>
+      <button class="btn" id="copy">Copy</button>
+    </div>
+  </div>
+
+  <section>
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step"><b>1 · Install</b><p>One line in PowerShell (Windows 10/11 x64). No .NET SDK, no admin, no installer — the icon lands on your desktop.</p></div>
+      <div class="step"><b>2 · Start</b><p>Pick your project and the access mode (Read-Write / Read-only). The app starts the server on 127.0.0.1 and opens a public HTTPS tunnel.</p></div>
+      <div class="step"><b>3 · Connect</b><p>Point your AI chat at the endpoint from the window — the OAuth handshake completes by itself.</p></div>
+      <div class="step"><b>4 · Work</b><p>"Fix the bug in X", "add feature Y", "run the tests". You review with git diff, then commit and push yourself.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Adopted</h2>
+    <div class="stats">
+      <div class="stat"><div class="num" id="stat-installs">—</div><div class="lbl">installations</div></div>
+      <div class="stat"><div class="num" id="stat-views">—</div><div class="lbl">page visits</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the agent can do</h2>
+    <div class="tools">
+      <div class="tool"><code>list_projects</code> · registered project aliases</div>
+      <div class="tool"><code>list_files</code> · walk the tree (glob, depth limit)</div>
+      <div class="tool"><code>read_file</code> · numbered lines, pagination</div>
+      <div class="tool"><code>search_code</code> · regex across the project</div>
+      <div class="tool"><code>edit_file</code> · exact unique-snippet replacement</div>
+      <div class="tool"><code>write_file</code> · create / overwrite (size cap, UTF-8)</div>
+      <div class="tool"><code>delete_file</code> · single file, never folders</div>
+      <div class="tool"><code>run_build</code> · dotnet build in the project root</div>
+      <div class="tool"><code>run_tests</code> · dotnet test (VSTest filter)</div>
+      <div class="tool"><code>run_command</code> · any command — build/test/lint for any project type</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Download</h2>
+    <a class="btn" href="https://github.com/DomitorAI/mcp-code-editor/releases">mcp-code-editor-win-x64.zip · v1.0.0</a>
+  </section>
+
+  <section>
+    <h2>Feedback</h2>
+    <div class="feedback-row">
+      <a class="btn" href="https://github.com/DomitorAI/mcp-code-editor/issues">Report a bug / request a feature</a>
+      <a class="btn btn-ghost" href="https://github.com/DomitorAI/mcp-code-editor/discussions">Start a discussion</a>
+    </div>
+  </section>
+
+  <footer>
+    © 2026 DomitorAI · <a href="https://github.com/DomitorAI/mcp-code-editor">github.com/DomitorAI/mcp-code-editor</a>
+  </footer>
+</main>
+<script>
+var CMD = 'irm https://raw.githubusercontent.com/DomitorAI/mcp-code-editor/main/scripts/bootstrap.ps1 | iex';
+var copyBtn = document.getElementById('copy');
+copyBtn.addEventListener('click', function () {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(CMD).catch(function () {});
+  }
+  copyBtn.textContent = 'Copied';
+  setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1500);
+});
+var COUNTER_URL = '';
+(function () {
+  if (!COUNTER_URL) { return; }
+  fetch(COUNTER_URL + '?action=view')
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && typeof j.installs === 'number') { document.getElementById('stat-installs').textContent = j.installs.toLocaleString(); }
+      if (j && typeof j.views === 'number') { document.getElementById('stat-views').textContent = j.views.toLocaleString(); }
+    })
+    .catch(function () {});
+})();
+</script>
+</body>
+</html>
