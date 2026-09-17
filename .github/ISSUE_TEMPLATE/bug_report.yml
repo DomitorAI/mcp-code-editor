@@ -24,7 +24,7 @@ body:
     id: env
     attributes:
       label: Environment
-      placeholder: Windows version (10/11), app version (v1.0.0), client (claude.ai web / local MCP client), access mode (Read-Write / Read-only)
+      placeholder: Windows version (10/11), app version (v1.0.0), client (AI web chat / local MCP client), access mode (Read-Write / Read-only)
     validations:
       required: false
   - type: textarea

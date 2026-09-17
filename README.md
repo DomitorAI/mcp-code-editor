@@ -5,7 +5,7 @@
 <h1 align="center">mcp-code-editor</h1>
 
 <p align="center">
-  Let an AI agent — your <strong>claude.ai</strong> chat or any MCP client — <strong>read, edit, build and test your project directly on disk</strong>,
+  Let an AI agent — your <strong>AI</strong> web chat or any local MCP client — <strong>read, edit, build and test your project directly on disk</strong>,
   through a local MCP server with <strong>OAuth 2.1 + PKCE</strong> and an automatic HTTPS tunnel.
   One line to install. You stay in control: the agent never commits and never pushes.
 </p>
@@ -24,7 +24,7 @@ The script downloads the self-contained app + cloudflared into `%LOCALAPPDATA%` 
 
 1. Pick your project (**"Browse..."** on the **Project** row) and choose the access mode: **Read-Write** or **Read-only**.
 2. Press **Start** — the app picks a free port, starts the MCP server bound to `127.0.0.1` and opens a public HTTPS tunnel (cloudflared). The public URL appears on the **Endpoint** row, with a **Copy** button.
-3. Connect your AI chat (or any local MCP client) to `<public URL>/mcp`. In claude.ai: *Customize → Connectors → +* — the OAuth 2.1 + PKCE handshake completes automatically.
+3. Connect your AI chat (or any local MCP client) to `<public URL>/mcp`. In a web AI chat, add a custom MCP connector with that endpoint; in a local MCP client, add the endpoint as an MCP server — the OAuth 2.1 + PKCE handshake completes automatically.
 4. Ask the agent what you want: *"fix the bug in X"*, *"add feature Y"*, *"run the tests"* — it reads the code, edits files, runs build/test, and reports back.
 5. Review the result with `git diff` in your clone, then commit and push **yourself**.
 6. Press **Stop** when you're done — the tunnel URL (a random subdomain, new on every start) is your access barrier.
