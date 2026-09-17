@@ -1,6 +1,6 @@
 #Requires -Version 5.1
 <#
-SYNOPSIS: mcp-code-editor uninstall — sterge aplicatia, config-ul, scurtatura si fisierele temporare.
+SYNOPSIS: mcp-code-editor uninstall - removes the app, the config, the shortcut and the temp files.
 USAGE:
   irm https://raw.githubusercontent.com/DomitorAI/mcp-code-editor/main/scripts/uninstall.ps1 | iex
   powershell -File scripts/uninstall.ps1
@@ -22,7 +22,7 @@ if (Test-Path -LiteralPath $appDir) {
     Write-Step "removed: $appDir"
   }
   catch {
-    Write-Host "mcp-code-editor: nu am putut sterge $appDir (fisier blocat?). Incheie aplicatia si reia scriptul." -ForegroundColor Red
+    Write-Host "mcp-code-editor: could not remove $appDir (locked file?). Close the app and rerun the script." -ForegroundColor Red
     $failed = $true
   }
 }
@@ -54,4 +54,4 @@ if ($failed) {
 }
 
 Write-Host ''
-Write-Host 'Gata - aplicatia, config-ul si scurtatura au fost sterse. cloudflared a fost pastrat.' -ForegroundColor Green
+Write-Host 'Done - the app, the config and the shortcut have been removed. cloudflared was kept.' -ForegroundColor Green

@@ -1,6 +1,6 @@
 #Requires -Version 5.1
 <#
-SYNOPSIS: mcp-code-editor bootstrap — o linie de comanda, fara installer.
+SYNOPSIS: mcp-code-editor bootstrap - one command line, no installer.
 USAGE:
   irm https://raw.githubusercontent.com/DomitorAI/mcp-code-editor/main/scripts/bootstrap.ps1 | iex
   powershell -File scripts/bootstrap.ps1 [-ExeUrl <zip>] [-CloudflaredUrl <url>]
@@ -75,7 +75,7 @@ else {
   $found = Get-ChildItem -Path $extract -Filter $exeName -Recurse | Select-Object -First 1
   if (-not $found) {
     Remove-Item -LiteralPath $zip -Force
-    throw "arhiva nu contine $exeName"
+    throw "archive does not contain $exeName"
   }
   Copy-Item -Path (Join-Path $extract '*') -Destination $appDir -Recurse
   Remove-Item -LiteralPath $zip -Force
@@ -110,4 +110,4 @@ if (-not [string]::IsNullOrWhiteSpace($CounterUrl)) {
 }
 
 Write-Host ''
-Write-Host 'Gata - icon-ul mcp-code-editor e pe Desktop. Dublu-click pentru pornire.' -ForegroundColor Green
+Write-Host 'Done - the mcp-code-editor icon is on the Desktop. Double-click to start.' -ForegroundColor Green
