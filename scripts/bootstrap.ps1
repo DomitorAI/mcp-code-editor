@@ -12,7 +12,6 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$ProgressPreference = 'SilentlyContinue'
 
 if ($PSVersionTable.PSVersion.Major -lt 6) {
   [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -44,15 +43,52 @@ function Resolve-Source([string]$url) {
   return $url
 }
 
-function Save-File([string]$source, [string]$dest) {
+function Save-File([string]$source, [string]$dest, [string]$label) {
   $source = Resolve-Source $source
   if ($source -notmatch '^https?://') {
-    Copy-Item -LiteralPath $source -Destination $dest
+    Write-Step "$label - copying $source"
+    Copy-Item -LiteralPath $source -Destination $dest -Force
     return
   }
-  $wc = [System.Net.WebClient]::new()
-  $wc.DownloadFile($source, $dest)
-  $wc.Dispose()
+  Write-Step "$label - downloading $source"
+  $sw = [System.Diagnostics.Stopwatch]::StartNew()
+  $total = [long]0
+  $read = [long]0
+  $resp = $null
+  $in = $null
+  $out = $null
+  try {
+    $req = [System.Net.HttpWebRequest]::Create($source)
+    $req.Timeout = 1800000
+    $resp = $req.GetResponse()
+    $total = [long]$resp.ContentLength
+    $in = $resp.GetResponseStream()
+    $out = [IO.File]::Create($dest)
+    $buf = New-Object byte[] 65536
+    while (($n = $in.Read($buf, 0, $buf.Length)) -gt 0) {
+      $out.Write($buf, 0, $n)
+      $read += $n
+      if ($total -gt 0) {
+        Write-Progress -Activity $label -Status ('{0:N1} / {1:N1} MB' -f ($read / 1MB), ($total / 1MB)) -PercentComplete (($read / $total) * 100)
+      }
+      else {
+        Write-Progress -Activity $label -Status ('{0:N1} MB' -f ($read / 1MB))
+      }
+    }
+  }
+  catch {
+    Remove-Item -LiteralPath $dest -Force -ErrorAction SilentlyContinue
+    Write-Host 'mcp-code-editor: download failed - check the internet connection and rerun the command.' -ForegroundColor Red
+    throw
+  }
+  finally {
+    if ($null -ne $out) { $out.Dispose() }
+    if ($null -ne $in) { $in.Dispose() }
+    if ($null -ne $resp) { $resp.Close() }
+    Write-Progress -Activity $label -Completed
+  }
+  $sw.Stop()
+  Write-Step ('{0} - downloaded {1:N1} MB in {2} s' -f $label, ($read / 1MB), [int]$sw.Elapsed.TotalSeconds)
 }
 
 if (-not (Test-Path -LiteralPath $appDir)) {
@@ -65,18 +101,19 @@ if (Test-Path -LiteralPath $exePath) {
 }
 else {
   $zip = Join-Path $env:TEMP 'mcp-code-editor-latest.zip'
-  Write-Step "downloading exe: $ExeUrl"
-  Save-File $ExeUrl $zip
+  Save-File $ExeUrl $zip 'mcp-code-editor zip'
   $extract = Join-Path $env:TEMP 'mcp-code-editor-latest'
   if (Test-Path -LiteralPath $extract) {
     Remove-Item -LiteralPath $extract -Recurse -Force
   }
+  Write-Step 'extracting archive'
   Expand-Archive -Path $zip -DestinationPath $extract
   $found = Get-ChildItem -Path $extract -Filter $exeName -Recurse | Select-Object -First 1
   if (-not $found) {
     Remove-Item -LiteralPath $zip -Force
     throw "archive does not contain $exeName"
   }
+  Write-Step "installing to $appDir"
   Copy-Item -Path (Join-Path $extract '*') -Destination $appDir -Recurse
   Remove-Item -LiteralPath $zip -Force
   Write-Step "exe installed: $exePath"
@@ -90,8 +127,7 @@ else {
   if (-not (Test-Path -LiteralPath $cloudDir)) {
     New-Item -ItemType Directory -Path $cloudDir | Out-Null
   }
-  Write-Step "downloading cloudflared: $CloudflaredUrl"
-  Save-File $CloudflaredUrl $cloudExe
+  Save-File $CloudflaredUrl $cloudExe 'cloudflared'
   Write-Step "cloudflared installed: $cloudExe"
 }
 
