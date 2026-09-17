@@ -3,11 +3,10 @@
 SYNOPSIS: mcp-code-editor bootstrap — o linie de comanda, fara installer.
 USAGE:
   irm https://raw.githubusercontent.com/DomitorAI/mcp-code-editor/main/scripts/bootstrap.ps1 | iex
-  powershell -File scripts/bootstrap.ps1 [-Version 1.0.0] [-ExeUrl <zip>] [-CloudflaredUrl <url>]
+  powershell -File scripts/bootstrap.ps1 [-ExeUrl <zip>] [-CloudflaredUrl <url>]
 #>
 [CmdletBinding()]
 param(
-  [string]$Version = '1.0.0',
   [string]$ExeUrl = '',
   [string]$CloudflaredUrl = ''
 )
@@ -28,7 +27,7 @@ $cloudExe = Join-Path $cloudDir 'cloudflared.exe'
 $lnkPath  = Join-Path ([Environment]::GetFolderPath('Desktop')) 'mcp-code-editor.lnk'
 
 if ([string]::IsNullOrWhiteSpace($ExeUrl)) {
-  $ExeUrl = "https://github.com/$repo/releases/download/v$Version/mcp-code-editor-win-x64.zip"
+  $ExeUrl = "https://github.com/$repo/releases/latest/download/mcp-code-editor-win-x64.zip"
 }
 if ([string]::IsNullOrWhiteSpace($CloudflaredUrl)) {
   $CloudflaredUrl = 'https://github.com/cloudflare/cloudflared/releases/download/2026.9.1/cloudflared-windows-amd64.exe'
