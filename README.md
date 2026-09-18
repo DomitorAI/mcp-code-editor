@@ -54,6 +54,10 @@ All tools take an optional `project` alias. Responses are JSON: `{"ok": true, ..
 - **Read-only** mode exposes the read tools only — the safe choice for sensitive projects.
 - `run_command` executes as *you*, in the project root, with your OS permissions — don't point a public chat at a sensitive project.
 - The server binds to `127.0.0.1` only; the public URL is a cloudflared tunnel with a random subdomain, alive only while the app is running.
+- **Prompt injection.** The agent receives instructions from the chat; an adversarial prompt could try to make it modify files more than you intended. For sensitive projects, set `http.readOnly: true` — the agent can still read and search, but every write is refused.
+- **Custom MCP support varies.** Check your client's docs to see whether it accepts its own MCP servers with a custom endpoint; if not, the remaining option is a local MCP client (same machine).
+- **You are responsible for your prompts.** The agent acts on what you ask; you own the prompts you write and the changes they produce. Review what the agent did (diff, audit log) before keeping them.
+- **Recommendation: keep the project under Git**, so any change an agent makes can be easily reviewed and undone.
 
 ## Requirements
 
