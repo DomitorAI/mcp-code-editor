@@ -71,6 +71,17 @@ All tools take an optional `project` alias. Responses are JSON: `{"ok": true, ..
 - [Start a discussion](https://github.com/DomitorAI/mcp-code-editor/discussions)
 - or press the **Feedback** button in the app (from the next release)
 
+## Auto-update
+
+The app checks for a newer version on startup and, if one is available, you can install it with a single click — no need to re-run the bootstrap line.
+
+- **Startup check** — the app queries GitHub Releases (`releases/latest`) with a 10 s timeout. Any failure (offline, bad response, missing asset) just shows "Could not check for updates (offline?)" and never blocks — the app works normally.
+- **The Update row** (third row in the window) — shows the state: you're on the latest version / "Version X is available - update recommended" / offline. The **Update** button is enabled only when a newer version exists **and** the server is not running (press **Stop** first).
+- **Installing** — on **Update**, the app downloads the `mcp-code-editor-win-x64.zip` archive to a temp folder (progress on the Status row), then launches a small external `.cmd` script that waits for the app to close, copies the binaries over `%LOCALAPPDATA%\mcp-code-editor\` and restarts the app automatically. (The external script is needed because the running executable is locked by the OS and can't overwrite itself.)
+- **What is kept** — the archive contains only the app binaries (exe + dll). `config.json`, `mcp.oauth.json` (the RSA key + OAuth tokens) and `audit.log` are **not** in the archive, so they survive the update; because the OAuth key is kept, already-authorized tokens and clients stay valid — no re-authorization needed.
+- **Installed build only** — self-update works only in the installed build (under `%LOCALAPPDATA%\mcp-code-editor`). A development build (run from `bin\`) shows "Self-update is only available in the installed version."
+- **Safe failure mode** — any problem (interrupted download, the script blocked by antivirus/SmartScreen) leaves the app on the old version; there is never a corrupted intermediate state. Temp folders left by an interrupted update are cleaned up on the next start.
+
 ## Uninstall
 
 Close the app, then one line (as for install):
