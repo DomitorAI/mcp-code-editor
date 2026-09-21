@@ -40,6 +40,44 @@ The script downloads the self-contained app + cloudflared into `%LOCALAPPDATA%` 
 
 2. Press **Start** — the app picks a free port, starts the MCP server bound to `127.0.0.1` and opens a public HTTPS tunnel (cloudflared). With the default *quick tunnel* the port is chosen automatically (8080–8180); with a *named tunnel* (**Tunnel** row → **Configure...**) it is fixed (default 8080). The public URL appears on the **Endpoint** row, with a **Copy** button.
 3. Connect your AI chat (or any local MCP client) to `<public URL>/mcp`. In a web AI chat, add a custom MCP connector with that endpoint; in a local MCP client, add the endpoint as an MCP server — the OAuth 2.1 handshake completes automatically.
+
+   *Web AI chat path (ChatGPT shown):*
+
+   <p align="center">
+     <img src="assets/connect-chatgpt-settings.png" alt="ChatGPT web app sidebar with the account menu open, a red arrow pointing at Settings">
+   </p>
+
+   *In the ChatGPT web app, open the account menu at the bottom-left of the sidebar and select **Settings**.*
+
+   <p align="center">
+     <img src="assets/connect-chatgpt-developer-mode.png" alt="ChatGPT settings on the Plugins page, with the Developer mode option highlighted by a red rectangle">
+   </p>
+
+   *In **Settings → Plugins**, open **Developer mode**.*
+
+   <p align="center">
+     <img src="assets/connect-chatgpt-developer-mode-toggle.png" alt="ChatGPT Security and login settings, Developer mode toggle switched on, highlighted by a red rectangle and arrow, with an ELEVATED RISK badge">
+   </p>
+
+   *Turn the **Developer mode** toggle on (it lives under **Security and login**) — this allows unverified connectors. Note the **ELEVATED RISK** warning.*
+
+   <p align="center">
+      <img src="assets/connect-chatgpt-plugins-add.png" alt="ChatGPT Plugins page with the Plugins item highlighted in the sidebar and the plus button highlighted in the top-right corner">
+    </p>
+
+    *Open **Plugins** from the sidebar and press the **+** button (top-right) to add a connector.*
+
+   <p align="center">
+     <img src="assets/connect-chatgpt-new-plugin.png" alt="New Plugin dialog with a name field, a Server URL field, OAuth authentication, and a checked I understand and want to continue box, with the mcp-code-editor window showing the public Endpoint in the background">
+   </p>
+
+   *Give the connector a name and paste the public **Server URL** (the tunnel endpoint from the mcp-code-editor **Endpoint** row, shown in the background). Keep **Authentication** on **OAuth** and tick **I understand and want to continue**.*
+
+   <p align="center">
+     <img src="assets/connect-chatgpt-oauth-consent.png" alt="OAuth consent screen reading Add your connector to ChatGPT, with the Sign in button highlighted by a red rectangle">
+   </p>
+
+   *On the consent screen, press **Sign in with your-connector** — the OAuth 2.1 handshake completes and the connector is ready to use.*
 4. Ask the agent what you want: *"fix the bug in X"*, *"add feature Y"*, *"run the tests"* — it reads the code, edits files, runs build/test, and reports back.
 5. Review the result with `git diff` in your clone, then commit and push **yourself**.
 6. Press **Stop** when you're done — the tunnel URL (a random subdomain, new on every start, with the quick tunnel) is your access barrier.
