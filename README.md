@@ -14,7 +14,7 @@
 
 For people who work with an AI agent in the browser — and want that agent to work on the **real project**, not on pasted fragments:
 
-- **One-off, no account** — try it once on a project when you need it; no sign-up involved.
+- **No account** — use it on a project when you need it; no sign-up involved.
 - **No copy-paste** — you write the prompt; the agent reads the project as a whole — classes, data and the links between them — instead of you pasting code chunks.
 - **Solutions grounded in your code** — with the full project context, the agent proposes a correct fix instead of guessing from fragments.
 
