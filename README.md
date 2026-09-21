@@ -7,7 +7,7 @@
 <p align="center">
   Let an AI agent — your <strong>AI</strong> web chat or any local MCP client — <strong>read, edit, build and test your project directly on disk</strong>,
   through a local MCP server with <strong>OAuth 2.1</strong> (PKCE for public clients, client secret for confidential ones) and an automatic HTTPS tunnel (quick or named).
-  One line to install. You stay in control: the agent never commits and never pushes.
+  One line to install. You stay in control: with the default approval policy, the agent can't run any command — `git commit` or `git push` included — without first getting your approval in the window.
 </p>
 
 ## Who it's for
@@ -30,7 +30,7 @@ The script downloads the self-contained app + cloudflared into `%LOCALAPPDATA%` 
 
 ## How to use it
 
-1. Pick your project (**"Browse..."** on the **Project** row) and choose the access mode: **Read-Write** or **Read-only** (the window has 8 rows: **Project**, **Mode**, **Update**, **Start/Stop** + **Feedback**, **Tunnel**, **Endpoint**, **Status**, plus the **Uninstall** button at the bottom-right).
+1. Pick your project (**"Browse..."** on the **Project** row) and choose the access mode: **Read-Write** or **Read-only** (the window has 8 rows: **Project**, **Mode**, **Update**, **Start/Stop** + **Feedback**, **Endpoint**, **Tunnel**, **Status**, and the **Uninstall** button on the last row, at the bottom-right).
 
    <p align="center">
      <img src="assets/main-window.png" alt="The mcp-code-editor control window: Project and Mode rows, Update status, Start and Feedback buttons, Endpoint and Tunnel rows, Uninstall button">
@@ -80,7 +80,7 @@ The script downloads the self-contained app + cloudflared into `%LOCALAPPDATA%` 
    *On the consent screen, press **Sign in with your-connector** — the OAuth 2.1 handshake completes and the connector is ready to use.*
 4. First, tell the agent which project to work on (*"work on C:\path\to\your-project"*), then ask what you want: *"fix the bug in X"*, *"add feature Y"*, *"run the tests"* — it reads the code, edits files, runs build/test, and reports back.
 5. Review the result with `git diff` in your clone, then commit and push **yourself**.
-6. **If you stop the app** — the tunnel dies with it (the public URL is your access barrier). With the quick tunnel the next start issues a **new** URL: the connector you added in step 3 goes stale (it still points at the dead URL), so **delete** it (below) and **add a new one** with the new URL (the step 3 flow: **+** → **New Plugin** → new **Server URL** → **OAuth** → **Sign in**). With a named tunnel the URL never changes — the existing connector keeps working.
+6. **If the tunnel dies while the app is running** — the app detects it, clears the **Endpoint** row and shows "Tunnel stopped - the public URL is no longer valid. Press Stop, then Start." **If you stop the app** — the tunnel dies with it (the public URL is your access barrier). With the quick tunnel the next start issues a **new** URL: the connector you added in step 3 goes stale (it still points at the dead URL), so **delete** it (below) and **add a new one** with the new URL (the step 3 flow: **+** → **New Plugin** → new **Server URL** → **OAuth** → **Sign in**). With a named tunnel the URL never changes — the existing connector keeps working.
 
     *Deleting the stale connector (web AI chat path, ChatGPT shown):*
 
@@ -104,7 +104,7 @@ The script downloads the self-contained app + cloudflared into `%LOCALAPPDATA%` 
 
 ## Tunnels: quick vs named
 
-The **Tunnel** row (5th in the window) switches between the two modes; **Configure...** saves the settings in the local `config.json` (the Cloudflare token stays on your machine only). Leaving the fields empty uses the quick tunnel.
+The **Tunnel** row (6th in the window) switches between the two modes; **Configure...** saves the settings in the local `config.json` (the Cloudflare token stays on your machine only). Leaving the fields empty uses the quick tunnel.
 
 | | Quick tunnel (default — **Tunnel** row empty) | Named tunnel (token + hostname set) |
 |---|---|---|
@@ -114,13 +114,15 @@ The **Tunnel** row (5th in the window) switches between the two modes; **Configu
 | Setup | none — press **Start** | once: create the tunnel + Public Hostname in your account, then paste the token/hostname on the **Tunnel** row |
 | Best for | testing, occasional use | a **permanent** AI chat connection (one MCP connector configured once, with a URL that never changes) |
 
+On start, the app also removes any orphaned cloudflared processes left by a previous run (Status: "Removed N orphaned tunnels from previous runs").
+
 With the quick tunnel every start issues a **new** public URL (**Endpoint** row → **Copy**), so the previous run's connector goes stale — step 6 covers deleting it and adding a fresh one. In a local MCP client you can instead just update the URL in its config — the OAuth 2.1 handshake completes automatically against the new endpoint.
 
 ## Authentication (OAuth 2.1)
 
 - The server implements **OAuth 2.1 natively** — no external authorization service. Clients self-register (**DCR**, `POST /oauth/register`), authorization is **auto-approved**, and tokens are **JWT (RS256, 1 hour)** with **one-shot refresh tokens**.
 - Both **public clients** (PKCE — the typical web chat; loopback redirect for local clients) and **confidential clients** (`client_secret_basic` / `client_secret_post`) are supported.
-- **CIMD** (RFC 9728, as adopted by the 2025-11-25 MCP spec): the client id can also be the URL of a public metadata document; the server fetches it with strict limits (public hosts only, no redirects, size/time caps) as an anti-SSRF guard.
+- **CIMD** (client-id metadata document — an IETF draft referenced by the 2025-11-25 MCP spec): the client id can also be the URL of a public metadata document; the server fetches it with strict limits (public hosts only, no redirects, size/time caps) as an anti-SSRF guard. The server also publishes the OAuth 2.0 protected-resource metadata (RFC 9728) at `/.well-known/oauth-protected-resource`.
 - Every token is **bound to the URL (origin) it was issued for** — a token from a previous quick-tunnel URL is rejected on the new URL.
 
 ## What the agent can do
@@ -136,9 +138,9 @@ With the quick tunnel every start issues a **new** public URL (**Endpoint** row 
 | `delete_file` | deletes a single file (never folders) |
 | `run_build` | `dotnet build` in the project root |
 | `run_tests` | `dotnet test` (VSTest `--filter` supported) |
-| `run_command` | any command in the project root — build/test/lint for any project type (exit code + last ~20 KB of output) |
+| `run_command` | any command in the project root — build/test/lint for any project type (exit code + last ~20 KB of output). Each command requires **your approval in the window** before it runs (see Safety) |
 
-All tools take an optional `project` alias. Responses are JSON: `{"ok": true, ...}` / `{"ok": false, "error": "..."}`.
+All tools take an optional `project` alias. Aliases are registered in `config.json` (`projects` + `defaultProject`); the **Project** row sets the `default` alias. Responses are JSON: `{"ok": true, ...}` / `{"ok": false, "error": "..."}`.
 
 ## Safety
 
@@ -146,6 +148,7 @@ All tools take an optional `project` alias. Responses are JSON: `{"ok": true, ..
 - `denySegments` (`.git`, `bin`, `obj`, `.vs`, `node_modules`) blocks both reads and writes — including through absolute paths and symlinks/junctions.
 - Every write, delete and overwrite is recorded in an append-only **audit log** (JSONL).
 - **Read-only** mode exposes the read tools only — the safe choice for sensitive projects.
+- **`run_command` is human-approved.** Before any command the agent wants to run, it appears in the window for your approval (60 s timeout → auto-deny); `run_build` and `run_tests` are exempt — they run fixed commands. The policy is set in `config.json` under `commands.approval`: `always` (the default), `onOutsidePath` or `never` (case-insensitive; an invalid value is a startup configuration error). With `onOutsidePath`, commands that stay inside the project auto-approve; anything that looks like it reaches outside — absolute/UNC paths, environment variables, nested shells, inline or encoded code, network tools, registry, destructive verbs — still routes through approval. It's a guardrail, not a sandbox. Commands are single-line (newlines, control characters and invisible Unicode are rejected; chain with `&&`).
 - `run_command` executes as *you*, in the project root, with your OS permissions — don't point a public chat at a sensitive project.
 - The server binds to `127.0.0.1` only; the public URL is a cloudflared tunnel — a random subdomain with the quick tunnel, or your own fixed domain with a named tunnel (**Tunnel** row) — alive only while the app is running.
 - **Prompt injection.** The agent receives instructions from the chat; an adversarial prompt could try to make it modify files more than you intended. For sensitive projects, set `http.readOnly: true` — the agent can still read and search, but every write is refused.
@@ -163,7 +166,7 @@ All tools take an optional `project` alias. Responses are JSON: `{"ok": true, ..
 
 - [Report a bug or request a feature](https://github.com/DomitorAI/mcp-code-editor/issues) — templates included
 - [Start a discussion](https://github.com/DomitorAI/mcp-code-editor/discussions)
-- or press the **Feedback** button in the app (from the next release)
+- or press the **Feedback** button in the app — it opens the issue tracker
 
 ## Auto-update
 
