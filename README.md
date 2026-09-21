@@ -10,6 +10,14 @@
   One line to install. You stay in control: the agent never commits and never pushes.
 </p>
 
+## Who it's for
+
+For people who work with an AI agent in the browser — and want that agent to work on the **real project**, not on pasted fragments:
+
+- **One-off, no account** — try it once on a project when you need it; no sign-up involved.
+- **No copy-paste** — you write the prompt; the agent reads the project as a whole — classes, data and the links between them — instead of you pasting code chunks.
+- **Solutions grounded in your code** — with the full project context, the agent proposes a correct fix instead of guessing from fragments.
+
 ## Install (Windows 10/11 x64)
 
 No .NET SDK, no admin rights, no installer — one line in PowerShell:
