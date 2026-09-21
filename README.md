@@ -80,7 +80,27 @@ The script downloads the self-contained app + cloudflared into `%LOCALAPPDATA%` 
    *On the consent screen, press **Sign in with your-connector** — the OAuth 2.1 handshake completes and the connector is ready to use.*
 4. Ask the agent what you want: *"fix the bug in X"*, *"add feature Y"*, *"run the tests"* — it reads the code, edits files, runs build/test, and reports back.
 5. Review the result with `git diff` in your clone, then commit and push **yourself**.
-6. Press **Stop** when you're done — the tunnel URL (a random subdomain, new on every start, with the quick tunnel) is your access barrier.
+6. Press **Stop** when you're done — the tunnel dies with the app and the public URL is your access barrier. With the quick tunnel the next start issues a **new** URL, so the connector you added in step 3 goes stale (it still points at the dead URL), and a web AI chat cannot edit the URL of an existing connection (no edit/reconnect option) — **delete** the old connector (below) and **add a new one** with the new URL (the step 3 flow: **+** → **New Plugin** → name, new **Server URL**, **OAuth**, **Sign in**). With a named tunnel the URL never changes, so the existing connector keeps working.
+
+    *Deleting the stale connector (web AI chat path, ChatGPT shown):*
+
+    <p align="center">
+      <img src="assets/connect-chatgpt-plugins-installed.png" alt="ChatGPT Plugins page with the Installed button highlighted by a red rectangle">
+    </p>
+
+    *Open **Plugins** from the sidebar and click **Installed** to see the plugins you've added.*
+
+    <p align="center">
+      <img src="assets/connect-chatgpt-connector-open.png" alt="ChatGPT Settings Plugins list with the your-name-of-MCP-connections row and its arrow highlighted by a red rectangle">
+    </p>
+
+    *In the **Plugins** list, open your connector (the **your-name-of-MCP-connections** row) via the arrow on the right.*
+
+    <p align="center">
+      <img src="assets/connect-chatgpt-connector-delete.png" alt="ChatGPT connector detail page with the three-dot menu open and Delete highlighted by a red rectangle">
+    </p>
+
+    *In the **⋯** menu at the top-right of the connector page, choose **Delete** to remove the stale connection completely.*
 
 ## Tunnels: quick vs named
 
@@ -94,7 +114,7 @@ The **Tunnel** row (5th in the window) switches between the two modes; **Configu
 | Setup | none — press **Start** | once: create the tunnel + Public Hostname in your account, then paste the token/hostname on the **Tunnel** row |
 | Best for | testing, occasional use | a **permanent** AI chat connection (one MCP connector configured once, with a URL that never changes) |
 
-With the quick tunnel, on every start you only copy the new URL into your client's config (**Endpoint** row → **Copy**) — no new connection is needed: the registered client (DCR) and its refresh tokens stay valid in `mcp.oauth.json`; only the previous run's access token is rejected (tokens are bound to their origin URL) and the client re-authorizes automatically.
+With the quick tunnel, every start issues a **new** public URL (**Endpoint** row → **Copy**) and the previous run's URL dies with the app. In a web AI chat the connector is bound to the URL it was added with and there is no way to edit it (no edit/reconnect option) — the old connection goes stale and has to be deleted, then a new one added with the new URL (step 6). In a local MCP client you can instead just update the URL in its config — the OAuth 2.1 handshake then completes automatically against the new endpoint.
 
 ## Authentication (OAuth 2.1)
 
