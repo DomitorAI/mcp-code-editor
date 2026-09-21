@@ -78,7 +78,7 @@ The script downloads the self-contained app + cloudflared into `%LOCALAPPDATA%` 
    </p>
 
    *On the consent screen, press **Sign in with your-connector** — the OAuth 2.1 handshake completes and the connector is ready to use.*
-4. Ask the agent what you want: *"fix the bug in X"*, *"add feature Y"*, *"run the tests"* — it reads the code, edits files, runs build/test, and reports back.
+4. First, tell the agent which project to work on (*"work on C:\path\to\your-project"*), then ask what you want: *"fix the bug in X"*, *"add feature Y"*, *"run the tests"* — it reads the code, edits files, runs build/test, and reports back.
 5. Review the result with `git diff` in your clone, then commit and push **yourself**.
 6. **If you stop the app** — the tunnel dies with it (the public URL is your access barrier). With the quick tunnel the next start issues a **new** URL: the connector you added in step 3 goes stale (it still points at the dead URL), so **delete** it (below) and **add a new one** with the new URL (the step 3 flow: **+** → **New Plugin** → new **Server URL** → **OAuth** → **Sign in**). With a named tunnel the URL never changes — the existing connector keeps working.
 
