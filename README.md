@@ -31,6 +31,13 @@ The script downloads the self-contained app + cloudflared into `%LOCALAPPDATA%` 
 ## How to use it
 
 1. Pick your project (**"Browse..."** on the **Project** row) and choose the access mode: **Read-Write** or **Read-only** (the window has 8 rows: **Project**, **Mode**, **Update**, **Start/Stop** + **Feedback**, **Tunnel**, **Endpoint**, **Status**, plus the **Uninstall** button at the bottom-right).
+
+   <p align="center">
+     <img src="assets/main-window.png" alt="The mcp-code-editor control window: Project and Mode rows, Update status, Start and Feedback buttons, Endpoint and Tunnel rows, Uninstall button">
+   </p>
+
+   *The control window for steps 1–2: choose the project on the **Project** row, the access mode on the **Mode** row, then press **Start**.*
+
 2. Press **Start** — the app picks a free port, starts the MCP server bound to `127.0.0.1` and opens a public HTTPS tunnel (cloudflared). With the default *quick tunnel* the port is chosen automatically (8080–8180); with a *named tunnel* (**Tunnel** row → **Configure...**) it is fixed (default 8080). The public URL appears on the **Endpoint** row, with a **Copy** button.
 3. Connect your AI chat (or any local MCP client) to `<public URL>/mcp`. In a web AI chat, add a custom MCP connector with that endpoint; in a local MCP client, add the endpoint as an MCP server — the OAuth 2.1 handshake completes automatically.
 4. Ask the agent what you want: *"fix the bug in X"*, *"add feature Y"*, *"run the tests"* — it reads the code, edits files, runs build/test, and reports back.
