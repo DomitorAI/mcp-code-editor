@@ -25,6 +25,7 @@
 - Human approval for arbitrary commands by default.
 - Append-only JSONL audit log for writes and deletes.
 - Automatic application updates.
+- Multiple instances: one window per project in parallel; per-project OAuth state and audit log.
 
 Implementation and protocol details are documented in [docs/technical.md](docs/technical.md).
 
@@ -70,6 +71,23 @@ The control window contains:
 <p align="center">
   <img src="assets/main-window.png" alt="mcp-code-editor control window">
 </p>
+
+### Multiple instances (one window per project)
+
+Run one window per project in parallel. Per-project state:
+
+```text
+%LOCALAPPDATA%\mcp-code-editor\state\<project-key>\
+    mcp.oauth.json   RSA key, registered clients, refresh tokens
+    audit.log        append-only JSONL audit log
+    instance.lock    held while the project is served
+```
+
+`<project-key>` is a deterministic hash of the normalized absolute path; `C:\Proj` and `c:\proj\` map to the same folder (case-insensitive on Windows).
+
+The same project in two windows is refused at **Start**: `edit_file` is a lock-free read-modify-write, so two writers on the same code overwrite each other.
+
+State folders inactive for 90+ days are removed at startup (active project kept); the project's clients re-authorize once on the next start.
 
 ## 5. Tunnels
 
@@ -405,10 +423,9 @@ Update log:
 The update archive contains only application binaries. These remain unchanged:
 
 - `config.json`
-- `mcp.oauth.json`
-- `audit.log`
+- `state\` (per-project OAuth keys/tokens and audit logs)
 
-Because the OAuth key is preserved, existing authorized clients/tokens remain valid and do not require re-authorization.
+The OAuth key is preserved, so existing clients and tokens remain valid without re-authorization. A legacy top-level `mcp.oauth.json` / `audit.log` from an older version is moved into the project's state folder on first start after an update.
 
 Self-update is available only in the installed build. A development build run from `bin\` reports that self-update is unavailable.
 

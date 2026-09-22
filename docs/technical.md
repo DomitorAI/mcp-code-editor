@@ -30,8 +30,11 @@ Important files include:
 | File | Purpose |
 |---|---|
 | `config.json` | Project aliases, default project, tunnel and command policy configuration. |
-| `mcp.oauth.json` | OAuth RSA key and OAuth state/tokens. |
-| `audit.log` | Append-only JSONL audit log. |
+| `state\<project-key>\mcp.oauth.json` | Per-project OAuth RSA key, registered clients, tokens. |
+| `state\<project-key>\audit.log` | Per-project append-only JSONL audit log. |
+| `state\<project-key>\instance.lock` | File lock while the project is served; one instance per project. |
+
+`<project-key>` = first 16 hex chars of SHA-256 over the normalized absolute path (trailing separators stripped; case-insensitive on Windows). State folders inactive for 90+ days are removed at startup; the active folder is kept. A legacy top-level `mcp.oauth.json` / `audit.log` is moved into the started project's state directory on first start after an update (skipped for explicit `http.oauthStorePath` / `auditLogPath`, or when the legacy state does not belong to the started project).
 
 ## Command approval
 
