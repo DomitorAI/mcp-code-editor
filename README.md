@@ -171,7 +171,7 @@ To reconnect:
   <img src="assets/connect-chatgpt-connector-delete.png" alt="ChatGPT connector Delete action">
 </p>
 
-5. Create the connector again using the new **Endpoint** as **Server URL**.
+5. Create the connector again using the new **Endpoint** as **Server URL**, repeating [steps 4-10 of the ChatGPT setup](#chatgpt) above.
 6. Complete the OAuth authorization again.
 
 > **Why delete the connector?** A Quick Tunnel URL is temporary and changes on every start. The existing connector is configured for the old URL, and OAuth tokens are bound to the previous endpoint origin. Recreating the connector makes ChatGPT use the new URL and perform the OAuth handshake for that endpoint.
