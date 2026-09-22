@@ -26,6 +26,8 @@
 - Append-only JSONL audit log for writes and deletes.
 - Automatic application updates.
 
+Implementation and protocol details are documented in [docs/technical.md](docs/technical.md).
+
 ## 2. Requirements
 
 - Windows 10/11 x64
@@ -69,7 +71,46 @@ The control window contains:
   <img src="assets/main-window.png" alt="mcp-code-editor control window">
 </p>
 
-## 5. Connect an MCP Client
+## 5. Tunnels
+
+The **Tunnel → Configure...** settings select between a quick tunnel and a named tunnel. Settings are stored in local `config.json`; the Cloudflare token remains on the local machine.
+
+| | Quick tunnel (default) | Named tunnel |
+|---|---|---|
+| Cloudflare account | Not required | Your own account |
+| Public URL | Random `*.trycloudflare.com`, new on every start | Configured hostname, stable |
+| Local port | Automatically selected, 8080–8180 | Fixed, default 8080 |
+| Setup | None | Cloudflare tunnel + Public Hostname |
+| Backend target | Selected local port | `http://localhost:8080` by default |
+| Best for | Testing / occasional use | Persistent MCP connection |
+
+### Quick tunnel
+
+Leave the Tunnel configuration fields empty.
+
+Each start creates a new public URL. The previous URL becomes invalid.
+
+For a local MCP client, update its configured URL.
+
+For a web connector, delete the stale connector and create a new one using the current Endpoint.
+
+### Named tunnel
+
+Configure a Cloudflare token and hostname once. The public hostname remains stable between application restarts, so an existing MCP connector can continue using the same URL.
+
+The fixed local port is 8080 by default. Starting fails if that port is already in use.
+
+### Tunnel failure
+
+If Cloudflared stops while the application is running:
+
+- the **Endpoint** row is cleared;
+- Status reports that the public URL is no longer valid;
+- press **Stop**, then **Start**.
+
+On startup, the application removes orphaned Cloudflared processes from previous runs. Status reports the number removed.
+
+## 6. Connect an MCP Client
 
 The MCP endpoint is:
 
@@ -178,7 +219,13 @@ To reconnect:
 
 For a **Named Tunnel**, the configured public hostname remains stable between application restarts, so this delete-and-recreate step is normally not required.
 
-## 6. Using the Agent
+## 7. Read-Only mode
+
+Read-Only mode exposes read/search tools only. File modifications are refused.
+
+Use it for projects that should be inspected without allowing agent changes.
+
+## 8. Using the Agent
 
 First identify the project when required:
 
@@ -204,7 +251,7 @@ git diff
 
 The user remains responsible for prompts, requested changes, commits and pushes.
 
-## 7. MCP Tools
+## 9. MCP Tools
 
 | Tool | Function |
 |---|---|
@@ -235,60 +282,6 @@ or:
 {"ok": false, "error": "..."}
 ```
 
-## 8. Tunnels
-
-The **Tunnel → Configure...** settings select between a quick tunnel and a named tunnel. Settings are stored in local `config.json`; the Cloudflare token remains on the local machine.
-
-| | Quick tunnel (default) | Named tunnel |
-|---|---|---|
-| Cloudflare account | Not required | Your own account |
-| Public URL | Random `*.trycloudflare.com`, new on every start | Configured hostname, stable |
-| Local port | Automatically selected, 8080–8180 | Fixed, default 8080 |
-| Setup | None | Cloudflare tunnel + Public Hostname |
-| Backend target | Selected local port | `http://localhost:8080` by default |
-| Best for | Testing / occasional use | Persistent MCP connection |
-
-### Quick tunnel
-
-Leave the Tunnel configuration fields empty.
-
-Each start creates a new public URL. The previous URL becomes invalid.
-
-For a local MCP client, update its configured URL.
-
-For a web connector, delete the stale connector and create a new one using the current Endpoint.
-
-### Named tunnel
-
-Configure a Cloudflare token and hostname once. The public hostname remains stable between application restarts, so an existing MCP connector can continue using the same URL.
-
-The fixed local port is 8080 by default. Starting fails if that port is already in use.
-
-### Tunnel failure
-
-If Cloudflared stops while the application is running:
-
-- the **Endpoint** row is cleared;
-- Status reports that the public URL is no longer valid;
-- press **Stop**, then **Start**.
-
-On startup, the application removes orphaned Cloudflared processes from previous runs. Status reports the number removed.
-
-## 9. OAuth 2.1
-
-The server implements OAuth 2.1 natively; no external authorization service is required.
-
-- Clients self-register through Dynamic Client Registration: `POST /oauth/register`.
-- Authorization is automatically approved.
-- Access tokens are JWTs using **RS256** and expire after **1 hour**.
-- Refresh tokens are one-shot.
-- **Public clients** use Proof Key for Code Exchange (**PKCE**); loopback redirects are supported for local clients.
-- **Confidential clients** support `client_secret_basic` and `client_secret_post`.
-- **CIMD** (Client ID Metadata Document) is supported. A client ID may be the URL of a public metadata document.
-- CIMD fetching uses public hosts only, no redirects, and size/time limits as an SSRF protection.
-- Protected-resource metadata is published at `/.well-known/oauth-protected-resource`.
-- Tokens are bound to the endpoint origin. A token issued for a previous quick-tunnel URL is rejected when the endpoint URL changes.
-
 ## 10. Security
 
 ### Project boundaries
@@ -303,12 +296,6 @@ The server implements OAuth 2.1 natively; no external authorization service is r
   - `node_modules`
 - Restrictions also apply through absolute paths and symlinks/junctions.
 - Every write, overwrite and delete is recorded in the append-only audit log.
-
-### Read-Only mode
-
-Read-Only mode exposes read/search tools only. File modifications are refused.
-
-Use it for projects that should be inspected without allowing agent changes.
 
 ### Command approval
 
@@ -334,16 +321,6 @@ Supported policies:
 | `never` | No approval dialog is used. |
 
 Policy values are case-insensitive. An invalid value is a startup configuration error.
-
-With `onOutsidePath`, the following continue to require approval when detected:
-
-- absolute/UNC paths;
-- environment variables;
-- nested shells;
-- inline or encoded code;
-- network tools;
-- registry access;
-- destructive verbs.
 
 Commands are single-line. Newlines, control characters and invisible Unicode are rejected. Use `&&` for command chaining.
 
@@ -374,61 +351,7 @@ The agent acts on the user's instructions. Review the resulting changes, `git di
 
 Keep the project under Git so changes can be reviewed and undone.
 
-## 11. Configuration and Local Data
-
-Local application data is stored under:
-
-```text
-%LOCALAPPDATA%\mcp-code-editor\
-```
-
-Important files include:
-
-| File | Purpose |
-|---|---|
-| `config.json` | Project aliases, default project, tunnel and command policy configuration. |
-| `mcp.oauth.json` | OAuth RSA key and OAuth state/tokens. |
-| `audit.log` | Append-only JSONL audit log. |
-
-## 12. Auto-Update
-
-The installed application checks GitHub Releases at startup.
-
-- Release check: `releases/latest`, with a **10-second timeout**.
-- Offline/errors/missing assets do not block application startup.
-- **Update** is enabled only when a newer version exists and the server is stopped.
-- The update downloads `mcp-code-editor-win-x64.zip` to a temporary folder.
-- A temporary external `.cmd` script replaces the locked application files and restarts the application.
-- Progress is shown on **Status**.
-
-If the application does not restart automatically, start it manually.
-
-Update log:
-
-```text
-%TEMP%\mcp-code-editor-update.log
-```
-
-The update archive contains only application binaries. These remain unchanged:
-
-- `config.json`
-- `mcp.oauth.json`
-- `audit.log`
-
-Because the OAuth key is preserved, existing authorized clients/tokens remain valid and do not require re-authorization.
-
-Self-update is available only in the installed build. A development build run from `bin\` reports that self-update is unavailable.
-
-### Update failure
-
-If download, antivirus/SmartScreen or file replacement fails:
-
-- the old version remains active;
-- binary replacement is retried up to 3 times;
-- repeat **Update** or rerun the bootstrap if necessary;
-- temporary update folders are cleaned at the next startup.
-
-## 13. Troubleshooting
+## 11. Troubleshooting
 
 ### Tunnel stopped
 
@@ -462,7 +385,43 @@ Verify:
 - OAuth authentication is enabled;
 - the client supports custom MCP endpoints.
 
-## 14. Uninstall
+## 12. Auto-Update
+
+The installed application checks GitHub Releases at startup.
+
+- Release check: `releases/latest`, with a **10-second timeout**.
+- Offline/errors/missing assets do not block application startup.
+- **Update** is enabled only when a newer version exists and the server is stopped.
+- Progress is shown on **Status**.
+
+If the application does not restart automatically, start it manually.
+
+Update log:
+
+```text
+%TEMP%\mcp-code-editor-update.log
+```
+
+The update archive contains only application binaries. These remain unchanged:
+
+- `config.json`
+- `mcp.oauth.json`
+- `audit.log`
+
+Because the OAuth key is preserved, existing authorized clients/tokens remain valid and do not require re-authorization.
+
+Self-update is available only in the installed build. A development build run from `bin\` reports that self-update is unavailable.
+
+### Update failure
+
+If download, antivirus/SmartScreen or file replacement fails:
+
+- the old version remains active;
+- binary replacement is retried up to 3 times;
+- repeat **Update** or rerun the bootstrap if necessary;
+- temporary update folders are cleaned at the next startup.
+
+## 13. Uninstall
 
 ### From the application
 
@@ -498,12 +457,12 @@ The uninstall process:
 
 If an item remains locked by Explorer or antivirus software, rerun the uninstall script.
 
-## 15. Feedback
+## 14. Feedback
 
 - [Report a bug or request a feature](https://github.com/DomitorAI/mcp-code-editor/issues)
 - [Start a discussion](https://github.com/DomitorAI/mcp-code-editor/discussions)
 - Press **Feedback** in the application.
 
-## 16. License
+## 15. License
 
 All rights reserved — see [LICENSE](LICENSE).
