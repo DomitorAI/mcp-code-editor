@@ -121,6 +121,53 @@ The following screenshots document the ChatGPT web setup shown by the applicatio
   <img src="assets/connect-chatgpt-oauth-consent.png" alt="OAuth consent screen">
 </p>
 
+7. In **Settings → Plugins**, open the connector. The connected account is listed, and the **⋯** menu offers **Reconnect**, **Disconnect** and **Delete**.
+
+<p align="center">
+  <img src="assets/connect-chatgpt-connector-options.png" alt="ChatGPT connector options">
+</p>
+
+8. Press **View plugin detail**, then **Try in chat**.
+
+<p align="center">
+  <img src="assets/connect-chatgpt-try-in-chat.png" alt="ChatGPT try in chat">
+</p>
+
+9. A new chat tab opens. Close the **Meet ChatGPT Work** panel with the **X** button in the top-right corner. The connector is ready to use in chat.
+
+<p align="center">
+  <img src="assets/connect-chatgpt-new-chat.png" alt="ChatGPT new chat tab">
+</p>
+
+10. In the new chat, the connector is attached to the input box. Type your request and send it.
+
+<p align="center">
+  <img src="assets/connect-chatgpt-connector-attached.png" alt="ChatGPT connector attached to the prompt">
+</p>
+
+### If the application is stopped and started again
+
+With a **Quick Tunnel**, every new application start creates a new public HTTPS URL. The previous URL is no longer valid.
+
+This is important for web-based MCP connectors: the connector keeps the old server URL and OAuth origin. After the application starts again, it still points to the previous Quick Tunnel URL, so the connector cannot reach the new server.
+
+To reconnect:
+
+1. Press **Stop**, then **Start** in **mcp-code-editor**.
+2. Copy the new URL from **Endpoint**.
+3. In ChatGPT, open **Settings → Plugins** and find the existing connector.
+4. Open the **⋯** menu and select **Delete**.
+5. Create the connector again using the new **Endpoint** as **Server URL**.
+6. Complete the OAuth authorization again.
+
+<p align="center">
+  <img src="assets/connect-chatgpt-connector-options.png" alt="ChatGPT connector options and Delete action">
+</p>
+
+> **Why delete the connector?** A Quick Tunnel URL is temporary and changes on every start. The existing connector is configured for the old URL, and OAuth tokens are bound to the previous endpoint origin. Recreating the connector makes ChatGPT use the new URL and perform the OAuth handshake for that endpoint.
+
+For a **Named Tunnel**, the configured public hostname remains stable between application restarts, so this delete-and-recreate step is normally not required.
+
 ## 6. Using the Agent
 
 First identify the project when required:
