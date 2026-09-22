@@ -156,13 +156,23 @@ To reconnect:
 1. Press **Stop**, then **Start** in **mcp-code-editor**.
 2. Copy the new URL from **Endpoint**.
 3. In ChatGPT, open **Settings → Plugins** and find the existing connector.
-4. Open the **⋯** menu and select **Delete**.
-5. Create the connector again using the new **Endpoint** as **Server URL**.
-6. Complete the OAuth authorization again.
 
 <p align="center">
-  <img src="assets/connect-chatgpt-connector-options.png" alt="ChatGPT connector options and Delete action">
+  <img src="assets/connect-chatgpt-plugins-installed.png" alt="ChatGPT installed plugins">
 </p>
+
+<p align="center">
+  <img src="assets/connect-chatgpt-connector-open.png" alt="ChatGPT connector in the plugins list">
+</p>
+
+4. Open the **⋯** menu and select **Delete**.
+
+<p align="center">
+  <img src="assets/connect-chatgpt-connector-delete.png" alt="ChatGPT connector Delete action">
+</p>
+
+5. Create the connector again using the new **Endpoint** as **Server URL**.
+6. Complete the OAuth authorization again.
 
 > **Why delete the connector?** A Quick Tunnel URL is temporary and changes on every start. The existing connector is configured for the old URL, and OAuth tokens are bound to the previous endpoint origin. Recreating the connector makes ChatGPT use the new URL and perform the OAuth handshake for that endpoint.
 
