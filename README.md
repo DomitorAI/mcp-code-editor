@@ -466,3 +466,7 @@ If an item remains locked by Explorer or antivirus software, rerun the uninstall
 ## 15. License
 
 All rights reserved — see [LICENSE](LICENSE).
+
+## 16. About
+
+**mcp-code-editor** is built by [**DomitorAI**](https://github.com/DomitorAI) — Svatantra Dev (स्वतन्त्र) — independent developer · local-first AI tooling.
