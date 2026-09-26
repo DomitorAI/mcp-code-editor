@@ -18,6 +18,8 @@
 - No account or sign-up.
 - No copy-paste of source fragments.
 - Project-wide code access: files, classes, data and relationships.
+- Compiler-level code intelligence: diagnostics, go-to-definition, references and symbol info (C#, Python, JavaScript/TypeScript, HTML, CSS).
+- `list_files` / `search_code` respect the project's `.gitignore`.
 - **Read-Only** and **Read-Write** access modes.
 - Local MCP server bound to `127.0.0.1`.
 - Public HTTPS endpoint through Cloudflare Tunnel.
@@ -36,6 +38,13 @@ Implementation and protocol details are documented in [docs/technical.md](docs/t
 - Internet access for the public tunnel
 
 No .NET SDK, administrator rights or separate installer are required. The application is self-contained; Cloudflared is downloaded by the bootstrap process.
+
+Optional, for code intelligence:
+
+- C# — an installed .NET SDK (used through MSBuild; not installed by the application).
+- Python / JavaScript / TypeScript / HTML / CSS — language servers on `PATH`: `pyright-langserver`, `typescript-language-server`, `vscode-html-language-server`, `vscode-css-language-server`.
+
+Missing toolchains are reported as `unavailable`; the other tools keep working.
 
 ## 3. Installation
 
@@ -125,6 +134,14 @@ If Cloudflared stops while the application is running:
 - the **Endpoint** row is cleared;
 - Status reports that the public URL is no longer valid;
 - press **Stop**, then **Start**.
+
+If the public URL stops responding while Cloudflared is still running (e.g. after sleep/hibernation):
+
+- the application probes the public URL every 30 s;
+- after **2 consecutive failed probes**, Status turns red, the taskbar button flashes and a sound plays — focus is not taken;
+- detection takes **~30–80 s** (best case: the link dies just before a probe; worst case: two probes hit the 10-second timeout — 30 + 10 + 30 + 10);
+- a single network glitch does not trigger the warning; if the URL recovers, the warning clears;
+- a redirect to another host (e.g. a Cloudflare Access login in front of a named tunnel) counts as reachable.
 
 On startup, the application removes orphaned Cloudflared processes from previous runs. Status reports the number removed.
 
@@ -239,7 +256,7 @@ For a **Named Tunnel**, the configured public hostname remains stable between ap
 
 ## 7. Read-Only mode
 
-Read-Only mode exposes read/search tools only. File modifications are refused.
+Read-Only mode exposes read/search tools and the code intelligence tools. File modifications are refused.
 
 Use it for projects that should be inspected without allowing agent changes.
 
@@ -274,15 +291,19 @@ The user remains responsible for prompts, requested changes, commits and pushes.
 | Tool | Function |
 |---|---|
 | `list_projects` | Lists registered project aliases. |
-| `list_files` | Walks the project tree using a glob pattern and depth limit. |
+| `list_files` | Walks the project tree using a glob pattern and depth limit; entries ignored by `.gitignore` are hidden. |
 | `read_file` | Reads a text file with numbered lines and pagination. |
-| `search_code` | Regex search across the project. |
+| `search_code` | Regex search across the project; files ignored by `.gitignore` are skipped. |
 | `edit_file` | Exact snippet replacement; the match must be unique. |
 | `write_file` | Creates or overwrites a UTF-8 file, subject to size limits. |
 | `delete_file` | Deletes one file; folders cannot be deleted. |
 | `run_build` | Runs `dotnet build` in the project root. |
 | `run_tests` | Runs `dotnet test`; VSTest `--filter` is supported. |
 | `run_command` | Runs an arbitrary command in the project root; approval policy applies. |
+| `get_diagnostics` | Compiler errors (warnings on request) for a file, or for the whole C# solution. |
+| `go_to_definition` | Declaration of the symbol at a line/column. |
+| `find_references` | All references to the symbol at a line/column, including the declaration. |
+| `get_symbol_info` | Kind, signature, containing type and summary of the symbol at a line/column. |
 
 All tools accept an optional `project` alias.
 
@@ -300,12 +321,23 @@ or:
 {"ok": false, "error": "..."}
 ```
 
+### Code intelligence
+
+- **C#** runs Roslyn in-process against the project's `.sln` / `.slnx` / `.csproj`; other languages use language servers found on `PATH`. Nothing is installed by the application.
+- Results always reflect the files currently on disk: edits, new and deleted files are picked up on every call.
+- The tools never write to disk.
+- `status`: `ok`; `loading` — analysis not ready yet, retry the call; `unavailable` — see `error`. Neither `loading` nor `unavailable` means "no errors".
+- Positions are 1-based; paths are relative to the project root.
+- Output is capped for the agent's context budget: max 30 diagnostics (errors first; the first 5 with full message, the rest first line only, marked `…`), max 50 locations, 200-character summaries.
+- An explicitly requested path ignored by `.gitignore` (e.g. `list_files docs`) is still listed/searched in full.
+
 ## 10. Security
 
 ### Project boundaries
 
 - The agent writes freely only inside the active project.
-- Absolute paths are considered outside the project for write operations and require approval.
+- An absolute path inside the project root is treated as a project path; any other absolute path is outside the project and requires approval for writes.
+- `write_file` also requires approval when it would shrink an existing file to less than half its size (a sign of truncated content).
 - `denySegments` blocks both reads and writes for:
   - `.git`
   - `bin`
@@ -329,6 +361,10 @@ Every `run_command` request is shown in the application for approval.
 
 - Approval timeout: **60 seconds**
 - Timeout result: **automatic deny**
+
+The approval dialog appears on top of all windows, on the screen with the mouse cursor, even when the application is minimized; it has a taskbar button, flashes and plays a sound. Requests are shown one at a time.
+
+If the MCP client stops waiting (its own request timeout), the dialog closes and nothing is written or run — even if **Allow** is pressed afterwards. The agent is told whether the request was denied (do not retry), timed out or abandoned by the client (retry allowed).
 
 Supported policies:
 
@@ -402,6 +438,10 @@ Verify:
 - client uses `<endpoint>/mcp`;
 - OAuth authentication is enabled;
 - the client supports custom MCP endpoints.
+
+### Code intelligence returns `unavailable`
+
+Read `error`: install the .NET SDK (C#) or the language server for that language and make sure it is on `PATH`. A newly installed toolchain is picked up within about a minute, without restarting the application.
 
 ## 12. Auto-Update
 
