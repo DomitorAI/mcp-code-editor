@@ -1,80 +1,48 @@
-# mcp-code-editor — technical reference
+# mcp-code-editor — advanced configuration
 
-Implementation details referenced by the [user guide](../README.md).
+For users who want to adjust settings by hand or connect their own MCP client. The [user guide](../README.md) covers everything needed for normal use.
 
-## OAuth 2.1
+## Local files
 
-The server implements OAuth 2.1 natively; no external authorization service is required.
-
-- Clients self-register through Dynamic Client Registration: `POST /oauth/register`.
-- Authorization is automatically approved.
-- Access tokens are JWTs using **RS256** and expire after **1 hour**.
-- Refresh tokens are one-shot.
-- **Public clients** use Proof Key for Code Exchange (**PKCE**); loopback redirects are supported for local clients.
-- **Confidential clients** support `client_secret_basic` and `client_secret_post`.
-- **CIMD** (Client ID Metadata Document) is supported. A client ID may be the URL of a public metadata document.
-- CIMD fetching uses public hosts only, no redirects, and size/time limits as an SSRF protection.
-- Protected-resource metadata is published at `/.well-known/oauth-protected-resource`.
-- Tokens are bound to the endpoint origin. A token issued for a previous quick-tunnel URL is rejected when the endpoint URL changes.
-
-## Configuration and Local Data
-
-Local application data is stored under:
-
-```text
-%LOCALAPPDATA%\mcp-code-editor\
-```
-
-Important files include:
+Everything lives under `%LOCALAPPDATA%\mcp-code-editor\`:
 
 | File | Purpose |
 |---|---|
-| `config.json` | Project aliases, default project, tunnel and command policy configuration. |
-| `state\<project-key>\mcp.oauth.json` | Per-project OAuth RSA key, registered clients, tokens. |
-| `state\<project-key>\audit.log` | Per-project append-only JSONL audit log. |
-| `state\<project-key>\instance.lock` | File lock while the project is served; one instance per project. |
+| `config.json` | Settings (see below). |
+| `state\<project>\audit.log` | Audit log of the project: one JSON line per change, deletion or command. |
+| `state\<project>\mcp.oauth.json` | Sign-in data of the project's clients. Keep it private. |
 
-`<project-key>` = first 16 hex chars of SHA-256 over the normalized absolute path (trailing separators stripped; case-insensitive on Windows). State folders inactive for 90+ days are removed at startup; the active folder is kept. A legacy top-level `mcp.oauth.json` / `audit.log` is moved into the started project's state directory on first start after an update (skipped for explicit `http.oauthStorePath` / `auditLogPath`, or when the legacy state does not belong to the started project).
+Each project has its own `state` folder. Folders of projects not used for 90 days are removed at startup; their clients sign in again next time.
 
-Audit timestamps (`ts`) are local time with UTC offset, e.g. `2026-09-24T13:53:59+03:00`; entries written by older versions are UTC (`...Z`).
+## `config.json`
 
-## Command approval
+Most settings are managed from the application window. These can be changed by hand while the application is stopped (key names are case-insensitive):
 
-With `onOutsidePath`, the following continue to require approval when detected:
+| Key | Default | Meaning |
+|---|---|---|
+| `commands.approval` | `always` | `always`, `onOutsidePath` or `never` — see *Command approval* in the user guide. |
+| `denyFilePatterns` | `.env`, `.env.*`, `*.pem`, `*.key`, `*.pfx`, `*.p12`, `*.jks`, `*.keystore`, `*.kdbx`, `*.publishsettings`, `id_rsa*`, `id_dsa*`, `id_ecdsa*`, `id_ed25519*`, `.netrc`, `_netrc`, `.git-credentials`, `.npmrc`, `.pypirc`, `secrets.json`, `credentials.json` | File names hidden from the agent. `*.example`, `*.sample`, `*.template`, `*.dist` and `*.pub` always stay visible. `[]` disables the list. |
+| `denySegments` | `.git`, `bin`, `obj`, `.vs`, `node_modules` | Folder names the agent cannot enter. |
+| `maxWriteBytes` | `1048576` (1 MB) | Largest file the agent can write. |
 
-- absolute/UNC paths;
-- environment variables;
-- nested shells;
-- inline or encoded code;
-- network tools;
-- registry access;
-- destructive verbs.
+An invalid `commands.approval` value, or a `config.json` that is not valid JSON, stops the application at **Start** with an error message.
 
-## Code intelligence
+## Limits
 
-- **C#**: `MSBuildWorkspace` loads the root `.sln` / `.slnx` (alphabetical first) or the single `.csproj`. The loaded solution is an in-memory snapshot — `TryApplyChanges` is never called, so nothing is saved to disk. Changed, added and removed `.cs` files are synchronized on every call; a changed `.csproj` / `.sln` reloads the workspace. A failed load or missing SDK is retried after 30 s.
-- **LSP**: one server process per project and language (`pyright-langserver`, `typescript-language-server`, `vscode-html-language-server`, `vscode-css-language-server`, found on `PATH`). Open documents are synchronized with `didOpen` / `didChange` / `didClose`; other files of the language with `workspace/didChangeWatchedFiles`. Diagnostics are pulled (`textDocument/diagnostic`) when the server advertises `diagnosticProvider`, otherwise awaited from `publishDiagnostics`.
-- Server URIs are normalized to local paths (servers answer `file:///c%3A/...`).
-- A crashed language server is restarted on the next call; an unavailable toolchain is re-checked after 60 s.
+| Limit | Value |
+|---|---|
+| Text file read or edited in one call | 25 MB |
+| File searched when searching a folder | 2 MB (larger files are skipped and counted) |
+| Image | 3.75 MB, 8,000 px per side |
 
-## .gitignore filtering
+## Connecting your own MCP client
 
-`list_files` and `search_code` use Git as the oracle: `git ls-files -z --cached --others --exclude-standard` for files, `git check-ignore` for directories that have no visible file (checked level by level; ignored subtrees are not traversed). Without Git or outside a repository, no filter is applied. Nested repositories and submodules are listed as opaque directories.
+The server implements OAuth 2.1 itself; no external authorization service is used.
 
-## File handling
-
-- Text detection: UTF-16/32 BOM → refused; NUL in the first 8 KB → binary; otherwise strict UTF-8 decoding. Invalid UTF-8 is decoded lossily for `read_file` only.
-- Line endings: the dominant style (CRLF vs LF) is detected; `newString` is normalized to it, and a multi-line `oldString` given with `\n` is retried in the file's style.
-- Limits: 25 MB read/edit, 1 MB `maxWriteBytes` (an edit may not grow a file past it), 2 MB per file during directory search.
-- `read_image` reads the dimensions from the file header (PNG IHDR, GIF screen descriptor, JPEG SOFn, WebP VP8/VP8L/VP8X), without decoding or external libraries; the signature must match the extension.
-- Generated lock files (`package-lock.json`, `yarn.lock`, `poetry.lock`, `Cargo.lock`, ...) can be edited but the response carries a `warning` to regenerate them instead.
-- Protection is by path and name: a hard link with an innocent name pointing to a sensitive file is not detected (creating one already requires local access).
-
-## Tool responses
-
-Tool responses are JSON with relaxed escaping: quotes, `<`, `>`, `+`, `&` and non-ASCII characters are kept as-is instead of `"`-style escapes, reducing the text returned to the agent.
-
-## Auto-Update
-
-- The update downloads `mcp-code-editor-win-x64.zip` to a temporary folder.
-- A temporary external `.cmd` script replaces the locked application files and restarts the application.
+- Dynamic Client Registration: `POST /oauth/register`.
+- Public clients use PKCE; loopback redirects are supported for local clients.
+- Confidential clients: `client_secret_basic` and `client_secret_post`.
+- Client ID Metadata Documents (CIMD) are supported.
+- Protected-resource metadata: `/.well-known/oauth-protected-resource`.
+- Access tokens expire after 1 hour; refresh tokens are single-use.
+- Tokens are tied to the endpoint URL: after a quick-tunnel restart, the client must sign in again.

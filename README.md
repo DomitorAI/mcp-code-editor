@@ -5,48 +5,46 @@
 <h1 align="center">mcp-code-editor</h1>
 
 <p align="center">
-  An AI agent can read, edit, build and test a project directly on disk through a local MCP server,
-  OAuth 2.1 and an HTTPS Cloudflare Tunnel.
+  Let an AI agent read, edit, build and test your project directly on disk —
+  from a web AI chat or a local MCP client.
 </p>
 
 ## 1. Overview
 
-**mcp-code-editor** is a Windows desktop application for connecting an AI agent — through a web AI chat or local MCP client — to a real project on disk.
+**mcp-code-editor** is a Windows desktop application that connects an AI agent to a real project on your computer. No copy-paste of code fragments: the agent works on the project itself, and you review the result with Git.
 
 ### Features
 
 - No account or sign-up.
-- No copy-paste of source fragments.
-- Project-wide code access: files, classes, data and relationships.
-- Compiler-level code intelligence: diagnostics, go-to-definition, references and symbol info (C#, Python, JavaScript/TypeScript, HTML, CSS).
-- `list_files` / `search_code` respect the project's `.gitignore`.
-- Image viewing for UI screenshots and diagrams (`read_image`).
-- Secret files (`.env`, keys, certificates) are blocked by default; encoding and line endings are preserved on edit.
-- **Read-Only** and **Read-Write** access modes.
-- Local MCP server bound to `127.0.0.1`.
-- Public HTTPS endpoint through Cloudflare Tunnel.
-- OAuth 2.1 authentication implemented by the server.
-- Human approval for arbitrary commands by default.
-- Append-only JSONL audit log for writes and deletes.
-- Automatic application updates.
-- Multiple instances: one window per project in parallel; per-project OAuth state and audit log.
+- The agent sees the whole project: files, code structure, compiler errors, references between symbols (C#, Python, JavaScript/TypeScript, HTML, CSS).
+- The agent can view screenshots and diagrams from the project.
+- **Read-Only** and **Read-Write** modes.
+- Every command the agent wants to run is shown to you for approval (default).
+- Secret files (`.env`, keys, certificates) are hidden from the agent by default.
+- Files ignored by `.gitignore` are hidden from listings and searches.
+- Every file change is recorded in an audit log.
+- Public HTTPS endpoint through Cloudflare Tunnel, protected by OAuth 2.1.
+- One window per project; several projects can run in parallel.
+- Automatic updates.
 
-Implementation and protocol details are documented in [docs/technical.md](docs/technical.md).
+<p align="center">
+  <img src="assets/main-window.png" alt="mcp-code-editor control window">
+</p>
 
 ## 2. Requirements
 
 - Windows 10/11 x64
 - PowerShell
-- Internet access for the public tunnel
+- Internet access
 
-No .NET SDK, administrator rights or separate installer are required. The application is self-contained; Cloudflared is downloaded by the bootstrap process.
+No administrator rights, .NET installation or separate installer are required.
 
-Optional, for code intelligence:
+Optional, for code intelligence (compiler errors, go-to-definition, references):
 
-- C# — an installed .NET SDK (used through MSBuild; not installed by the application).
-- Python / JavaScript / TypeScript / HTML / CSS — language servers on `PATH`: `pyright-langserver`, `typescript-language-server`, `vscode-html-language-server`, `vscode-css-language-server`.
+- C# — an installed .NET SDK.
+- Python / JavaScript / TypeScript / HTML / CSS — the matching language server on `PATH`: `pyright-langserver`, `typescript-language-server`, `vscode-html-language-server`, `vscode-css-language-server`.
 
-Missing toolchains are reported as `unavailable`; the other tools keep working.
+Without them, everything else keeps working; the agent is told that code intelligence is unavailable for that language.
 
 ## 3. Installation
 
@@ -56,112 +54,43 @@ Run in PowerShell:
 irm https://raw.githubusercontent.com/DomitorAI/mcp-code-editor/main/scripts/bootstrap.ps1 | iex
 ```
 
-The bootstrap installs the application and Cloudflared under:
+The application and Cloudflared are installed under `%LOCALAPPDATA%\mcp-code-editor\`, and a **mcp-code-editor** desktop shortcut is created.
 
-```text
-%LOCALAPPDATA%\mcp-code-editor\
-```
-
-A **mcp-code-editor** desktop shortcut is created automatically.
-
-## 4. Start and Project Selection
+## 4. Start
 
 1. Launch **mcp-code-editor**.
-2. On **Project**, press **Browse...** and select the project.
-3. On **Mode**, select:
-   - **Read-Write** — file modifications are available.
-   - **Read-Only** — only read/search operations are exposed.
-4. Configure **Tunnel** if a named tunnel is required.
+2. On **Project**, press **Browse...** and select the project folder.
+3. On **Mode**, select **Read-Write** or **Read-Only**.
+4. Optional: on **Tunnel**, press **Configure...** to use a named tunnel (see below).
 5. Press **Start**.
 6. Copy the public URL from **Endpoint**.
 
-The control window contains:
-
-**Project → Mode → Update → Start/Stop + Feedback → Endpoint → Tunnel → Status → Uninstall**
-
-<p align="center">
-  <img src="assets/main-window.png" alt="mcp-code-editor control window">
-</p>
-
-### Multiple instances (one window per project)
-
-Run one window per project in parallel. Per-project state:
-
-```text
-%LOCALAPPDATA%\mcp-code-editor\state\<project-key>\
-    mcp.oauth.json   RSA key, registered clients, refresh tokens
-    audit.log        append-only JSONL audit log
-    instance.lock    held while the project is served
-```
-
-`<project-key>` is a deterministic hash of the normalized absolute path; `C:\Proj` and `c:\proj\` map to the same folder (case-insensitive on Windows).
-
-The same project in two windows is refused at **Start**: `edit_file` is a lock-free read-modify-write, so two writers on the same code overwrite each other.
-
-State folders inactive for 90+ days are removed at startup (active project kept); the project's clients re-authorize once on the next start.
+To work on several projects at the same time, open one window per project. The same project cannot be opened in two windows.
 
 ## 5. Tunnels
-
-The **Tunnel → Configure...** settings select between a quick tunnel and a named tunnel. Settings are stored in local `config.json`; the Cloudflare token remains on the local machine.
 
 | | Quick tunnel (default) | Named tunnel |
 |---|---|---|
 | Cloudflare account | Not required | Your own account |
-| Public URL | Random `*.trycloudflare.com`, new on every start | Configured hostname, stable |
-| Local port | Automatically selected, 8080–8180 | Fixed, default 8080 |
-| Setup | None | Cloudflare tunnel + Public Hostname |
-| Backend target | Selected local port | `http://localhost:8080` by default |
-| Best for | Testing / occasional use | Persistent MCP connection |
+| Public URL | Random `*.trycloudflare.com`, new on every start | Your hostname, stable |
+| Setup | None | Cloudflare tunnel + public hostname, entered once in **Tunnel → Configure...** |
+| Best for | Testing, occasional use | Everyday use with a saved connector |
 
-### Quick tunnel
+The Cloudflare token stays on your computer.
 
-Leave the Tunnel configuration fields empty.
+### If the public URL stops working
 
-Each start creates a new public URL. The previous URL becomes invalid.
-
-For a local MCP client, update its configured URL.
-
-For a web connector, delete the stale connector and create a new one using the current Endpoint.
-
-### Named tunnel
-
-Configure a Cloudflare token and hostname once. The public hostname remains stable between application restarts, so an existing MCP connector can continue using the same URL.
-
-The fixed local port is 8080 by default. Starting fails if that port is already in use.
-
-### Tunnel failure
-
-If Cloudflared stops while the application is running:
-
-- the **Endpoint** row is cleared;
-- Status reports that the public URL is no longer valid;
-- press **Stop**, then **Start**.
-
-If the public URL stops responding while Cloudflared is still running (e.g. after sleep/hibernation):
-
-- the application probes the public URL every 30 s;
-- after **2 consecutive failed probes**, Status turns red, the taskbar button flashes and a sound plays — focus is not taken;
-- detection takes **~30–80 s** (best case: the link dies just before a probe; worst case: two probes hit the 10-second timeout — 30 + 10 + 30 + 10);
-- a single network glitch does not trigger the warning; if the URL recovers, the warning clears;
-- a redirect to another host (e.g. a Cloudflare Access login in front of a named tunnel) counts as reachable.
-
-On startup, the application removes orphaned Cloudflared processes from previous runs. Status reports the number removed.
+- If Cloudflared stops, the **Endpoint** row is cleared and Status says so. Press **Stop**, then **Start**.
+- If the URL stops responding while the application is running (e.g. after sleep), the application notices within about a minute: Status turns red, the taskbar button flashes and a sound plays. If the URL recovers by itself, the warning clears.
+- Right after **Start**, a new quick-tunnel URL can take a minute or two to become reachable; the warning waits for it.
 
 ## 6. Connect an MCP Client
 
-The MCP endpoint is:
-
-```text
-<public-endpoint>/mcp
-```
-
-Configure the AI chat or local MCP client with this endpoint. OAuth 2.1 authentication is completed by the server.
-
-Custom MCP endpoint support depends on the client. If a web AI client does not support custom MCP servers, use a local MCP client on the same machine.
+Use the **Endpoint** URL as the MCP server URL in your AI chat or local MCP client, with **OAuth** authentication. Support for custom MCP servers depends on the client.
 
 ### ChatGPT
 
-The following screenshots document the ChatGPT web setup shown by the application documentation. ChatGPT interface names and locations may change.
+ChatGPT menu names and locations may change.
 
 1. Open the account menu and select **Settings**.
 
@@ -193,13 +122,13 @@ The following screenshots document the ChatGPT web setup shown by the applicatio
   <img src="assets/connect-chatgpt-new-plugin.png" alt="ChatGPT new connector">
 </p>
 
-6. On the OAuth consent screen, press **Sign in with your-name-of-MCP-connections**.
+6. On the consent screen, press **Sign in with your-name-of-MCP-connections**.
 
 <p align="center">
   <img src="assets/connect-chatgpt-oauth-consent.png" alt="OAuth consent screen">
 </p>
 
-7. In **Settings → Plugins**, open the connector. The connected account is listed, and the **⋯** menu offers **Reconnect**, **Disconnect** and **Delete**.
+7. In **Settings → Plugins**, open the connector. The **⋯** menu offers **Reconnect**, **Disconnect** and **Delete**.
 
 <p align="center">
   <img src="assets/connect-chatgpt-connector-options.png" alt="ChatGPT connector options">
@@ -211,29 +140,24 @@ The following screenshots document the ChatGPT web setup shown by the applicatio
   <img src="assets/connect-chatgpt-try-in-chat.png" alt="ChatGPT try in chat">
 </p>
 
-9. A new chat tab opens. Close the **Meet ChatGPT Work** panel with the **X** button in the top-right corner. The connector is ready to use in chat.
+9. A new chat opens. Close the **Meet ChatGPT Work** panel with the **X** in the top-right corner.
 
 <p align="center">
   <img src="assets/connect-chatgpt-new-chat.png" alt="ChatGPT new chat tab">
 </p>
 
-10. In the new chat, the connector is attached to the input box. Type your request and send it.
+10. The connector is attached to the input box. Type your request and send it.
 
 <p align="center">
   <img src="assets/connect-chatgpt-connector-attached.png" alt="ChatGPT connector attached to the prompt">
 </p>
 
-### If the application is stopped and started again
+### After a restart (quick tunnel)
 
-With a **Quick Tunnel**, every new application start creates a new public HTTPS URL. The previous URL is no longer valid.
+Every start of a quick tunnel creates a new URL, and the saved connector still points to the old one. To reconnect:
 
-This is important for web-based MCP connectors: the connector keeps the old server URL and OAuth origin. After the application starts again, it still points to the previous Quick Tunnel URL, so the connector cannot reach the new server.
-
-To reconnect:
-
-1. Press **Stop**, then **Start** in **mcp-code-editor**.
-2. Copy the new URL from **Endpoint**.
-3. In ChatGPT, open **Settings → Plugins** and find the existing connector.
+1. Copy the new URL from **Endpoint**.
+2. In ChatGPT, open **Settings → Plugins** and find the existing connector.
 
 <p align="center">
   <img src="assets/connect-chatgpt-plugins-installed.png" alt="ChatGPT installed plugins">
@@ -243,284 +167,135 @@ To reconnect:
   <img src="assets/connect-chatgpt-connector-open.png" alt="ChatGPT connector in the plugins list">
 </p>
 
-4. Open the **⋯** menu and select **Delete**.
+3. Open the **⋯** menu and select **Delete**.
 
 <p align="center">
   <img src="assets/connect-chatgpt-connector-delete.png" alt="ChatGPT connector Delete action">
 </p>
 
-5. Create the connector again using the new **Endpoint** as **Server URL**, repeating [steps 4-10 of the ChatGPT setup](#chatgpt) above.
-6. Complete the OAuth authorization again.
+4. Create the connector again with the new **Endpoint** ([steps 4–10](#chatgpt) above) and sign in again.
 
-> **Why delete the connector?** A Quick Tunnel URL is temporary and changes on every start. The existing connector is configured for the old URL, and OAuth tokens are bound to the previous endpoint origin. Recreating the connector makes ChatGPT use the new URL and perform the OAuth handshake for that endpoint.
+With a **named tunnel**, the URL does not change, so this is not needed.
 
-For a **Named Tunnel**, the configured public hostname remains stable between application restarts, so this delete-and-recreate step is normally not required.
+## 7. Using the Agent
 
-## 7. Read-Only mode
-
-Read-Only mode exposes read/search tools (including `read_image`) and the code intelligence tools. File modifications are refused.
-
-Use it for projects that should be inspected without allowing agent changes.
-
-## 8. Using the Agent
-
-First identify the project when required:
+Tell the agent which project to work on, if needed:
 
 ```text
 Work on C:\path\to\your-project
 ```
 
-Typical requests:
+Then ask as you would ask a developer:
 
 ```text
 Fix the bug in X.
 Add feature Y.
 Run the tests.
+Look at the screenshot docs/login.png and fix the layout.
 ```
 
-The agent can read/search the project, edit files, build/test the project and report results.
-
-Review the result with Git before committing or pushing:
+The agent reads and searches the project, edits files, builds and tests it, and reports back. Review the result before committing:
 
 ```powershell
 git diff
 ```
 
-The user remains responsible for prompts, requested changes, commits and pushes.
+You remain responsible for the prompts, the changes you keep, and your commits and pushes.
 
-## 9. MCP Tools
+### What the agent can do
 
-| Tool | Function |
+| Tool | What it does |
 |---|---|
-| `list_projects` | Lists registered project aliases. |
-| `list_files` | Walks the project tree using a glob pattern and depth limit; entries ignored by `.gitignore` are hidden. |
-| `read_file` | Reads a UTF-8 text file with numbered lines and pagination; long lines are cut at 2,000 characters, ~200k characters per call. |
-| `read_image` | Returns a PNG, JPEG, GIF or WebP image (max 3.75 MB — 5 MB once base64-encoded — and 8,000 px per side) as MCP image content. |
-| `search_code` | Regex search across the project; files ignored by `.gitignore`, files over 2 MB and secret files are skipped; each match is shortened to a 300-character window. |
-| `edit_file` | Exact snippet replacement; the match must be unique. BOM and line endings (CRLF/LF) are preserved. |
-| `write_file` | Creates or overwrites a UTF-8 file, subject to size limits; an overwrite keeps the existing BOM and line endings. |
-| `delete_file` | Deletes one file; folders cannot be deleted. |
-| `run_build` | Runs `dotnet build` in the project root. |
-| `run_tests` | Runs `dotnet test`; VSTest `--filter` is supported. |
-| `run_command` | Runs an arbitrary command in the project root; approval policy applies. |
-| `get_diagnostics` | Compiler errors (warnings on request) for a file, or for the whole C# solution. |
-| `go_to_definition` | Declaration of the symbol at a line/column. |
-| `find_references` | All references to the symbol at a line/column, including the declaration. |
-| `get_symbol_info` | Kind, signature, containing type and summary of the symbol at a line/column. |
+| `list_projects` | Lists the available projects. |
+| `list_files` | Lists files and folders. |
+| `read_file` | Reads a text file. |
+| `read_image` | Views an image (PNG, JPEG, GIF, WebP). |
+| `search_code` | Searches the project text. |
+| `edit_file` | Changes a precise piece of a file. |
+| `write_file` | Creates or replaces a file. |
+| `delete_file` | Deletes a file (never a folder). |
+| `run_build` / `run_tests` | Builds / tests a .NET project. |
+| `run_command` | Runs any other command (build, test, lint) — after your approval. |
+| `get_diagnostics` | Lists compiler errors. |
+| `go_to_definition` / `find_references` / `get_symbol_info` | Navigates the code like an IDE. |
 
-All tools accept an optional `project` alias.
+In **Read-Only** mode, only the reading, searching and code-navigation tools are available.
 
-Aliases are registered in `config.json` under `projects` and `defaultProject`. The **Project** row selects the default alias.
+## 8. Security
 
-Responses use:
+### What the agent can reach
 
-```json
-{"ok": true, "...": "..."}
-```
-
-or:
-
-```json
-{"ok": false, "error": "..."}
-```
-
-### Code intelligence
-
-- **C#** runs Roslyn in-process against the project's `.sln` / `.slnx` / `.csproj`; other languages use language servers found on `PATH`. Nothing is installed by the application.
-- Results always reflect the files currently on disk: edits, new and deleted files are picked up on every call.
-- The tools never write to disk.
-- `status`: `ok`; `loading` — analysis not ready yet, retry the call; `unavailable` — see `error`. Neither `loading` nor `unavailable` means "no errors".
-- Positions are 1-based; paths are relative to the project root.
-- Output is capped for the agent's context budget: max 30 diagnostics (errors first; the first 5 with full message, the rest first line only, marked `…`), max 50 locations, 200-character summaries.
-- An explicitly requested path ignored by `.gitignore` (e.g. `list_files docs`) is still listed/searched in full.
-
-## 10. Security
-
-### Project boundaries
-
-- The agent writes freely only inside the active project.
-- An absolute path inside the project root is treated as a project path; any other absolute path is outside the project and requires approval for writes.
-- `write_file` also requires approval when it would shrink an existing file to less than half its size (a sign of truncated content).
-- `denySegments` blocks both reads and writes for:
-  - `.git`
-  - `bin`
-  - `obj`
-  - `.vs`
-  - `node_modules`
-- Restrictions also apply through absolute paths and symlinks/junctions.
-- Every write, overwrite and delete is recorded in the append-only audit log.
-
-### File integrity
-
-- Only valid UTF-8 text is edited. Binary files, UTF-16 files and files in a legacy code page (e.g. Windows-1251/1252) are refused by `edit_file` / `write_file`; rewriting them would destroy content or every non-ASCII character.
-- Non-UTF-8 files can still be read; the response carries a `warning`.
-- `edit_file` validates the edit before asking for approval and re-reads the file after approval.
-
-### Secret files
-
-- `denyFilePatterns` blocks reading, searching, editing and deleting files by name, inside and outside the project. Default:
-  - `.env`, `.env.*`
-  - `*.pem`, `*.key`, `*.pfx`, `*.p12`, `*.jks`, `*.keystore`, `*.kdbx`, `*.publishsettings`
-  - `id_rsa*`, `id_dsa*`, `id_ecdsa*`, `id_ed25519*`
-  - `.netrc`, `_netrc`, `.git-credentials`, `.npmrc`, `.pypirc`, `secrets.json`, `credentials.json`
-- Templates (`*.example`, `*.sample`, `*.template`, `*.dist`) and public keys (`*.pub`) stay accessible.
-- Outside the project, credential folders are blocked: `.ssh`, `.gnupg`, `.aws`, `.azure`, `.kube`, `.docker`.
-- The application folder (`config.json`, `state\` with OAuth tokens) is blocked everywhere.
-- A legitimate project `.env` / `.npmrc` is blocked too; remove the pattern from `denyFilePatterns` to allow it. `[]` disables the check.
-- `run_command` is not covered: it runs with the user's permissions, after approval.
+- The agent works freely only inside the selected project folder. Changing anything outside it requires your approval.
+- `.git`, `bin`, `obj`, `.vs` and `node_modules` are off limits.
+- Secret files are hidden from the agent — it cannot read, search, change or delete them: `.env` files, private keys and certificates (`*.pem`, `*.key`, `*.pfx`, `id_rsa`, ...), credential files (`.npmrc`, `.git-credentials`, `secrets.json`, ...). Templates such as `.env.example` stay visible. The list can be changed in `config.json` (see [docs/technical.md](docs/technical.md)).
+- Outside the project, credential folders (`.ssh`, `.aws`, `.azure`, ...) and the application's own folder are blocked.
+- Files that are not UTF-8 text (binary files, old code pages) are never rewritten by the agent, so they cannot be damaged by an edit.
+- Every change is recorded in an audit log.
 
 ### Command approval
 
-`run_command` executes as the current Windows user, in the project root, with that user's OS permissions.
+By default, every command the agent wants to run is shown to you first — the dialog appears on top of all windows, even when the application is minimized. Commands run as your Windows user, in the project folder, with your permissions.
 
-Default:
+- No answer within **60 seconds** means **deny**.
+- `run_build` and `run_tests` run fixed .NET commands without a dialog.
 
-```text
-commands.approval = always
-```
-
-Every `run_command` request is shown in the application for approval.
-
-- Approval timeout: **60 seconds**
-- Timeout result: **automatic deny**
-
-The approval dialog appears on top of all windows, on the screen with the mouse cursor, even when the application is minimized; it has a taskbar button, flashes and plays a sound. Requests are shown one at a time.
-
-If the MCP client stops waiting (its own request timeout), the dialog closes and nothing is written or run — even if **Allow** is pressed afterwards. The agent is told whether the request was denied (do not retry), timed out or abandoned by the client (retry allowed).
-
-Supported policies:
+The policy is set in `config.json` (`commands.approval`):
 
 | Policy | Behavior |
 |---|---|
-| `always` | Every `run_command` requires approval. |
-| `onOutsidePath` | Commands staying inside the project auto-approve; commands that appear to reach outside require approval. |
-| `never` | No approval dialog is used. |
-
-Policy values are case-insensitive. An invalid value is a startup configuration error.
-
-Commands are single-line. Newlines, control characters and invisible Unicode are rejected. Use `&&` for command chaining.
-
-The policy is a **guardrail, not a sandbox**.
-
-`run_build` and `run_tests` are fixed commands and do not use the `run_command` approval dialog.
+| `always` (default) | Every command requires approval. **The only setting that protects you against a manipulated agent.** |
+| `onOutsidePath` | Commands that look like they stay in the project run without asking. A convenience, not a protection. |
+| `never` | No approval. Use only on a trusted, local setup. |
 
 ### Network exposure
 
-The MCP server binds to `127.0.0.1` only.
-
-The public endpoint is provided by Cloudflared:
-
-- quick tunnel: random public subdomain;
-- named tunnel: configured hostname.
-
-The public endpoint exists only while the application/tunnel is running.
+The server listens only on your computer (`127.0.0.1`). It is reachable from the internet only through the tunnel, only while the application is running, and only after OAuth sign-in.
 
 ### Prompt injection
 
-The agent receives instructions from the AI chat and may also encounter instructions in project content. Adversarial content can attempt to influence requested operations.
-
-Images are covered too: text in an image (including faint or tiny text) is data, not instructions. The `read_image` description tells the client so; enforcement belongs to the client.
-
-For sensitive projects, use `http.readOnly: true` / **Read-Only** mode.
+Project content — files, comments, images — can contain text written to manipulate the agent. Treat such text as data, not as instructions. For projects you do not trust, use **Read-Only** mode and keep command approval on `always`.
 
 ### Responsibility
 
-The agent acts on the user's instructions. Review the resulting changes, `git diff` and audit log before keeping them.
+The agent acts on your instructions. Keep the project under Git, and review the changes (`git diff`) and the audit log before keeping them.
 
-Keep the project under Git so changes can be reviewed and undone.
+## 9. FAQ and Troubleshooting
 
-## 11. Troubleshooting
+**The connector stopped working after I restarted the application.**
+With a quick tunnel the URL changes on every start; recreate the connector with the new Endpoint ([After a restart](#after-a-restart-quick-tunnel)). A named tunnel avoids this.
 
-### Tunnel stopped
+**The client says its sign-in is no longer valid.**
+Sign-ins are tied to the URL. After a quick-tunnel restart, sign in again with the new URL.
 
-Press **Stop**, then **Start**.
+**My client cannot connect.**
+Check that the application is running, the URL is the current **Endpoint**, OAuth authentication is selected, and the client supports custom MCP servers.
 
-A quick tunnel generates a new Endpoint URL.
+**A named tunnel does not start.**
+Check that local port 8080 is free and that the Cloudflare token and hostname are correct.
 
-### Quick-tunnel connector stopped working
+**A command was denied.**
+Approve it in the application window within 60 seconds.
 
-The URL changes on every start. Update the URL in a local MCP client, or delete/recreate the web connector with the new Endpoint.
+**The agent says it cannot read `.env` (or a key file).**
+That is intended: secret files are hidden. If the file holds no secrets, remove its pattern from `denyFilePatterns` in `config.json`.
 
-### OAuth token rejected after restart
+**The agent refuses to edit a file ("binary", "UTF-16" or "not UTF-8").**
+The file is not UTF-8 text. Convert it to UTF-8 in your editor, then ask again. The agent can still read it.
 
-With a quick tunnel, tokens are bound to the previous endpoint origin. Re-authorize the client against the new URL.
+**Code intelligence says `unavailable`.**
+Install the .NET SDK (C#) or the language server for that language and make sure it is on `PATH`. It is picked up within about a minute, without restarting.
 
-### Command was denied
+## 10. Updates
 
-Approve the command in the application window before the 60-second timeout.
+The application checks for a new version at startup. When one exists, **Update** is enabled while the server is stopped; progress is shown on Status.
 
-### Named tunnel cannot start
+Your settings (`config.json`), sign-ins and audit logs are kept — connected clients do not need to sign in again.
 
-Verify that the configured fixed local port (8080 by default) is available and that the Cloudflare token/hostname configuration is valid.
+If an update fails (download, antivirus, SmartScreen), the current version keeps working; press **Update** again or rerun the installation command. Log: `%TEMP%\mcp-code-editor-update.log`.
 
-### MCP client cannot connect
+## 11. Uninstall
 
-Verify:
-
-- application is running;
-- Endpoint is current;
-- client uses `<endpoint>/mcp`;
-- OAuth authentication is enabled;
-- the client supports custom MCP endpoints.
-
-### File is refused as binary, UTF-16 or non-UTF-8
-
-The file is not valid UTF-8. Convert it to UTF-8 (without changing its content) in an editor, then retry. Non-UTF-8 files remain readable.
-
-### `.env` or a key file cannot be read
-
-The file matches `denyFilePatterns`. Keep secrets out of the agent's reach, or remove the pattern from `config.json` if the file holds no secrets.
-
-### Code intelligence returns `unavailable`
-
-Read `error`: install the .NET SDK (C#) or the language server for that language and make sure it is on `PATH`. A newly installed toolchain is picked up within about a minute, without restarting the application.
-
-## 12. Auto-Update
-
-The installed application checks GitHub Releases at startup.
-
-- Release check: `releases/latest`, with a **10-second timeout**.
-- Offline/errors/missing assets do not block application startup.
-- **Update** is enabled only when a newer version exists and the server is stopped.
-- Progress is shown on **Status**.
-
-If the application does not restart automatically, start it manually.
-
-Update log:
-
-```text
-%TEMP%\mcp-code-editor-update.log
-```
-
-The update archive contains only application binaries. These remain unchanged:
-
-- `config.json`
-- `state\` (per-project OAuth keys/tokens and audit logs)
-
-The OAuth key is preserved, so existing clients and tokens remain valid without re-authorization. A legacy top-level `mcp.oauth.json` / `audit.log` from an older version is moved into the project's state folder on first start after an update.
-
-Self-update is available only in the installed build. A development build run from `bin\` reports that self-update is unavailable.
-
-### Update failure
-
-If download, antivirus/SmartScreen or file replacement fails:
-
-- the old version remains active;
-- binary replacement is retried up to 3 times;
-- repeat **Update** or rerun the bootstrap if necessary;
-- temporary update folders are cleaned at the next startup.
-
-## 13. Uninstall
-
-### From the application
-
-1. Stop the server.
-2. Press **Uninstall**.
-3. Confirm.
-
-The button is available only when the server is stopped and only in the installed build.
-
-### PowerShell
+Stop the server, press **Uninstall** and confirm.
 
 If the application no longer opens:
 
@@ -528,34 +303,18 @@ If the application no longer opens:
 irm https://raw.githubusercontent.com/DomitorAI/mcp-code-editor/main/scripts/uninstall.ps1 | iex
 ```
 
-Both methods remove:
+This removes `%LOCALAPPDATA%\mcp-code-editor\`, the desktop shortcut and temporary files. Your projects are never touched; Cloudflared is kept. No Windows service, registry entries or PATH changes are left behind.
 
-```text
-%LOCALAPPDATA%\mcp-code-editor\
-Desktop shortcut
-Temporary application files
-```
-
-The uninstall process:
-
-- keeps **Cloudflared**;
-- never modifies project source code;
-- creates no Windows service;
-- creates no registry entries;
-- makes no PATH changes.
-
-If an item remains locked by Explorer or antivirus software, rerun the uninstall script.
-
-## 14. Feedback
+## 12. Feedback
 
 - [Report a bug or request a feature](https://github.com/DomitorAI/mcp-code-editor/issues)
 - [Start a discussion](https://github.com/DomitorAI/mcp-code-editor/discussions)
 - Press **Feedback** in the application.
 
-## 15. License
+## 13. License
 
 All rights reserved — see [LICENSE](LICENSE).
 
-## 16. About
+## 14. About
 
 **mcp-code-editor** is built by [**DomitorAI**](https://github.com/DomitorAI) — Svatantra Dev (स्वतन्त्र) — building local-first AI tooling.
