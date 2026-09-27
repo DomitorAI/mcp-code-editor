@@ -20,6 +20,8 @@
 - Project-wide code access: files, classes, data and relationships.
 - Compiler-level code intelligence: diagnostics, go-to-definition, references and symbol info (C#, Python, JavaScript/TypeScript, HTML, CSS).
 - `list_files` / `search_code` respect the project's `.gitignore`.
+- Image viewing for UI screenshots and diagrams (`read_image`).
+- Secret files (`.env`, keys, certificates) are blocked by default; encoding and line endings are preserved on edit.
 - **Read-Only** and **Read-Write** access modes.
 - Local MCP server bound to `127.0.0.1`.
 - Public HTTPS endpoint through Cloudflare Tunnel.
@@ -256,7 +258,7 @@ For a **Named Tunnel**, the configured public hostname remains stable between ap
 
 ## 7. Read-Only mode
 
-Read-Only mode exposes read/search tools and the code intelligence tools. File modifications are refused.
+Read-Only mode exposes read/search tools (including `read_image`) and the code intelligence tools. File modifications are refused.
 
 Use it for projects that should be inspected without allowing agent changes.
 
@@ -292,10 +294,11 @@ The user remains responsible for prompts, requested changes, commits and pushes.
 |---|---|
 | `list_projects` | Lists registered project aliases. |
 | `list_files` | Walks the project tree using a glob pattern and depth limit; entries ignored by `.gitignore` are hidden. |
-| `read_file` | Reads a text file with numbered lines and pagination. |
-| `search_code` | Regex search across the project; files ignored by `.gitignore` are skipped. |
-| `edit_file` | Exact snippet replacement; the match must be unique. |
-| `write_file` | Creates or overwrites a UTF-8 file, subject to size limits. |
+| `read_file` | Reads a UTF-8 text file with numbered lines and pagination; long lines are cut at 2,000 characters, ~200k characters per call. |
+| `read_image` | Returns a PNG, JPEG, GIF or WebP image (max 3.75 MB — 5 MB once base64-encoded — and 8,000 px per side) as MCP image content. |
+| `search_code` | Regex search across the project; files ignored by `.gitignore`, files over 2 MB and secret files are skipped; each match is shortened to a 300-character window. |
+| `edit_file` | Exact snippet replacement; the match must be unique. BOM and line endings (CRLF/LF) are preserved. |
+| `write_file` | Creates or overwrites a UTF-8 file, subject to size limits; an overwrite keeps the existing BOM and line endings. |
 | `delete_file` | Deletes one file; folders cannot be deleted. |
 | `run_build` | Runs `dotnet build` in the project root. |
 | `run_tests` | Runs `dotnet test`; VSTest `--filter` is supported. |
@@ -347,6 +350,25 @@ or:
 - Restrictions also apply through absolute paths and symlinks/junctions.
 - Every write, overwrite and delete is recorded in the append-only audit log.
 
+### File integrity
+
+- Only valid UTF-8 text is edited. Binary files, UTF-16 files and files in a legacy code page (e.g. Windows-1251/1252) are refused by `edit_file` / `write_file`; rewriting them would destroy content or every non-ASCII character.
+- Non-UTF-8 files can still be read; the response carries a `warning`.
+- `edit_file` validates the edit before asking for approval and re-reads the file after approval.
+
+### Secret files
+
+- `denyFilePatterns` blocks reading, searching, editing and deleting files by name, inside and outside the project. Default:
+  - `.env`, `.env.*`
+  - `*.pem`, `*.key`, `*.pfx`, `*.p12`, `*.jks`, `*.keystore`, `*.kdbx`, `*.publishsettings`
+  - `id_rsa*`, `id_dsa*`, `id_ecdsa*`, `id_ed25519*`
+  - `.netrc`, `_netrc`, `.git-credentials`, `.npmrc`, `.pypirc`, `secrets.json`, `credentials.json`
+- Templates (`*.example`, `*.sample`, `*.template`, `*.dist`) and public keys (`*.pub`) stay accessible.
+- Outside the project, credential folders are blocked: `.ssh`, `.gnupg`, `.aws`, `.azure`, `.kube`, `.docker`.
+- The application folder (`config.json`, `state\` with OAuth tokens) is blocked everywhere.
+- A legitimate project `.env` / `.npmrc` is blocked too; remove the pattern from `denyFilePatterns` to allow it. `[]` disables the check.
+- `run_command` is not covered: it runs with the user's permissions, after approval.
+
 ### Command approval
 
 `run_command` executes as the current Windows user, in the project root, with that user's OS permissions.
@@ -397,6 +419,8 @@ The public endpoint exists only while the application/tunnel is running.
 
 The agent receives instructions from the AI chat and may also encounter instructions in project content. Adversarial content can attempt to influence requested operations.
 
+Images are covered too: text in an image (including faint or tiny text) is data, not instructions. The `read_image` description tells the client so; enforcement belongs to the client.
+
 For sensitive projects, use `http.readOnly: true` / **Read-Only** mode.
 
 ### Responsibility
@@ -438,6 +462,14 @@ Verify:
 - client uses `<endpoint>/mcp`;
 - OAuth authentication is enabled;
 - the client supports custom MCP endpoints.
+
+### File is refused as binary, UTF-16 or non-UTF-8
+
+The file is not valid UTF-8. Convert it to UTF-8 (without changing its content) in an editor, then retry. Non-UTF-8 files remain readable.
+
+### `.env` or a key file cannot be read
+
+The file matches `denyFilePatterns`. Keep secrets out of the agent's reach, or remove the pattern from `config.json` if the file holds no secrets.
 
 ### Code intelligence returns `unavailable`
 

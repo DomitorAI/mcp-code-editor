@@ -61,6 +61,15 @@ With `onOutsidePath`, the following continue to require approval when detected:
 
 `list_files` and `search_code` use Git as the oracle: `git ls-files -z --cached --others --exclude-standard` for files, `git check-ignore` for directories that have no visible file (checked level by level; ignored subtrees are not traversed). Without Git or outside a repository, no filter is applied. Nested repositories and submodules are listed as opaque directories.
 
+## File handling
+
+- Text detection: UTF-16/32 BOM → refused; NUL in the first 8 KB → binary; otherwise strict UTF-8 decoding. Invalid UTF-8 is decoded lossily for `read_file` only.
+- Line endings: the dominant style (CRLF vs LF) is detected; `newString` is normalized to it, and a multi-line `oldString` given with `\n` is retried in the file's style.
+- Limits: 25 MB read/edit, 1 MB `maxWriteBytes` (an edit may not grow a file past it), 2 MB per file during directory search.
+- `read_image` reads the dimensions from the file header (PNG IHDR, GIF screen descriptor, JPEG SOFn, WebP VP8/VP8L/VP8X), without decoding or external libraries; the signature must match the extension.
+- Generated lock files (`package-lock.json`, `yarn.lock`, `poetry.lock`, `Cargo.lock`, ...) can be edited but the response carries a `warning` to regenerate them instead.
+- Protection is by path and name: a hard link with an innocent name pointing to a sensitive file is not detected (creating one already requires local access).
+
 ## Tool responses
 
 Tool responses are JSON with relaxed escaping: quotes, `<`, `>`, `+`, `&` and non-ASCII characters are kept as-is instead of `"`-style escapes, reducing the text returned to the agent.
