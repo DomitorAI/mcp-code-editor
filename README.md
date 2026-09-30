@@ -111,9 +111,19 @@ ChatGPT menu names and locations may change.
 </p>
 
 4. Open **Plugins** and press **+**.
+   - If the connector form opens, continue with step 5.
+   - If a menu opens instead, select **Create app**. In the **New Plugin** window that follows, do not upload anything — press **Create MCP App** at the bottom left. The connector form (step 5) opens.
 
 <p align="center">
   <img src="assets/connect-chatgpt-plugins-add.png" alt="Add ChatGPT connector">
+</p>
+
+<p align="center">
+  <img src="assets/connect-chatgpt-plugins-add-menu.png" alt="ChatGPT + menu: Create app">
+</p>
+
+<p align="center">
+  <img src="assets/connect-chatgpt-new-plugin-dialog.png" alt="ChatGPT New Plugin window: Create MCP App">
 </p>
 
 5. Enter a connector name and the current **Endpoint** as **Server URL**. Keep **Authentication: OAuth** and confirm the acknowledgement.
