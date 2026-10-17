@@ -269,7 +269,7 @@ You remain responsible for the prompts, the changes you keep, and your commits a
 |---|---|
 | `list_projects` | Lists the available projects. |
 | `list_files` | Lists files and folders. |
-| `read_file` | Reads a text file. |
+| `read_file` | Reads a text file. Also reads the text of Word (`.docx`) and PDF documents. |
 | `read_image` | Views an image (PNG, JPEG, GIF, WebP). |
 | `search_code` | Searches the project text. |
 | `edit_file` | Changes a precise piece of a file. |
