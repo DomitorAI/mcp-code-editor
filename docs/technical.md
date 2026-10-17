@@ -37,4 +37,8 @@ An invalid `commands.approval` value, or a `config.json` that is not valid JSON,
 
 ## Connecting your own MCP client
 
-Standard MCP authorization (OAuth 2.1 with dynamic client registration and PKCE) — any MCP client that supports it can connect. Access is renewed by the client automatically; sign-ins are tied to the endpoint URL: after a quick-tunnel restart, the client must sign in again.
+mcp-code-editor uses the standard MCP authorization: OAuth 2.1 with dynamic client registration and PKCE.
+Any MCP client that supports it can connect.
+
+- The client renews its access by itself.
+- A sign-in belongs to one endpoint URL. After a quick-tunnel restart the URL changes, so the client must sign in again.
