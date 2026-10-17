@@ -8,7 +8,7 @@
 
 <p align="center">
   <b>Built for one job:</b> let the AI agent you already use in the browser —
-  <b>ChatGPT</b> or any web chat that accepts custom MCP connectors — work directly on your real project:
+  any web chat that accepts custom MCP connectors — work directly on your real project:
   read it, edit it, build it, test it.
 </p>
 
@@ -18,7 +18,22 @@
 
 ## 1. Overview
 
-**mcp-code-editor** is a Windows desktop application that gives the agent in your **web AI chat** a safe, controlled door to a project on your computer. You keep chatting in the browser as usual — the agent now sees the whole project instead of the fragments you paste, makes the changes itself, builds and runs the tests, and you review the result with Git.
+**mcp-code-editor gives the AI agent in your web chat access to the project on your computer.**
+
+A web chat cannot see the files on your computer.
+So you copy code into the chat, paste the answer back, and hope it fits.
+mcp-code-editor removes that: the agent reads, edits, builds and tests your real project, while you keep chatting in the browser.
+
+### Why use it
+
+- **For the web chat you already use.** Desktop and command-line agents (in an IDE or a terminal) work on local files, but a web chat cannot. mcp-code-editor is the missing link for the web chat.
+- **No API key, no extra subscription.** The agent is the one in your chat, with the model and the plan you already have.
+- **Simple to set up.** One line installs it: no administrator rights, no .NET, Node or Python to install, no configuration files. Then you press **Start** and paste one URL into your chat.
+- **Light enough for any computer.** Useful for routine work on a computer where no desktop or command-line agent is installed. (Check that your organization allows it: while it runs, the project is reachable through a secure tunnel.)
+- **The whole project, not fragments.** The agent searches all files, navigates the code like an IDE (definitions, references, compiler errors), builds and runs the tests, and fixes its own errors.
+- **You stay in control.** Every command waits for your approval. Secret files are hidden. Every change is logged. You review the result with Git. See [Security](#8-security).
+
+**When you don't need it:** if you already work with a desktop or command-line agent that has access to your project.
 
 | Without mcp-code-editor | With mcp-code-editor |
 |---|---|
@@ -28,8 +43,6 @@
 | The chat guesses names and signatures | The agent navigates the code like an IDE: definitions, references, compiler errors |
 
 **Three steps:** install with one line → press **Start** on your project folder → paste the **Endpoint** URL into your chat as a connector. That is all ([Installation](#3-installation), [Connect](#6-connect-an-mcp-client)).
-
-You stay in control: every command needs your approval, secret files are hidden from the agent, every change is logged ([Security](#8-security)).
 
 ### Features
 
@@ -57,22 +70,31 @@ You stay in control: every command needs your approval, secret files are hidden 
 
 No administrator rights, .NET installation or separate installer are required.
 
-Optional, for code intelligence (compiler errors, go-to-definition, references):
+**Optional: code intelligence** (compiler errors, go to definition, references).
+Install what your project's language needs:
 
-- C# — an installed .NET SDK.
-- Python / JavaScript / TypeScript / HTML / CSS — the matching language server on `PATH`: `pyright-langserver`, `typescript-language-server`, `vscode-html-language-server`, `vscode-css-language-server`.
+| Language | What to install |
+|---|---|
+| C# | the .NET SDK |
+| Python | `pyright-langserver` |
+| JavaScript / TypeScript | `typescript-language-server` |
+| HTML | `vscode-html-language-server` |
+| CSS | `vscode-css-language-server` |
 
-Without them, everything else keeps working; the agent is told that code intelligence is unavailable for that language.
+The language servers must be on `PATH`.
+Without them everything else keeps working. The agent is told that code intelligence is unavailable for that language.
 
 ## 3. Installation
 
-Run in PowerShell:
+1. Press **Win+R**, type `powershell` and press **Enter**.
+2. Paste this line and press **Enter**:
+   ```powershell
+   irm https://raw.githubusercontent.com/DomitorAI/mcp-code-editor/main/scripts/bootstrap.ps1 | iex
+   ```
 
-```powershell
-irm https://raw.githubusercontent.com/DomitorAI/mcp-code-editor/main/scripts/bootstrap.ps1 | iex
-```
+**You should see:** a **mcp-code-editor** shortcut on your desktop.
 
-The application and Cloudflared are installed under `%LOCALAPPDATA%\mcp-code-editor\`, and a **mcp-code-editor** desktop shortcut is created.
+The application and Cloudflared are installed in `%LOCALAPPDATA%\mcp-code-editor\`.
 
 ## 4. Start
 
@@ -98,17 +120,28 @@ The Cloudflare token stays on your computer.
 
 ### If the public URL stops working
 
-- If Cloudflared stops, the **Endpoint** row is cleared and Status says so. Press **Stop**, then **Start**.
-- If the URL stops responding while the application is running (e.g. after sleep), the application notices within about a minute: Status turns red, the taskbar button flashes and a sound plays. If the URL recovers by itself, the warning clears.
-- Right after **Start**, a new quick-tunnel URL can take a minute or two to become reachable; the warning waits for it.
+**The Endpoint row is empty and Status says Cloudflared stopped.**
+Press **Stop**, then **Start**.
+
+**Status turns red, the taskbar button flashes and a sound plays.**
+The URL stopped responding while the application runs, for example after the computer slept.
+The application notices this within about a minute.
+- If the URL recovers by itself, the warning clears.
+- If not, press **Stop**, then **Start**.
+
+**Right after Start, the URL does not answer yet.**
+A new quick-tunnel URL can take a minute or two to become reachable. The warning waits for it.
 
 ## 6. Connect an MCP Client
 
 Use the **Endpoint** URL as the MCP server URL in your AI chat or local MCP client, with **OAuth** authentication. Support for custom MCP servers depends on the client.
 
-### ChatGPT
+### Example: the web agent of ChatGPT
 
-ChatGPT menu names and locations may change.
+As an example, these are the steps to connect the web agent of ChatGPT.
+Other web chats that accept custom MCP connectors are connected the same way: the **Endpoint** URL as the server URL, with OAuth.
+
+Menu names and locations in ChatGPT may change.
 
 1. Open the account menu and select **Settings**.
 
@@ -150,7 +183,7 @@ ChatGPT menu names and locations may change.
   <img src="assets/connect-chatgpt-new-plugin.png" alt="ChatGPT new connector">
 </p>
 
-6. On the consent screen, press **Sign in with your-name-of-MCP-connections**.
+6. On the consent screen, press **Sign in with …**. The button shows the connector name you entered in step 5.
 
 <p align="center">
   <img src="assets/connect-chatgpt-oauth-consent.png" alt="OAuth consent screen">
@@ -201,7 +234,7 @@ Every start of a quick tunnel creates a new URL, and the saved connector still p
   <img src="assets/connect-chatgpt-connector-delete.png" alt="ChatGPT connector Delete action">
 </p>
 
-4. Create the connector again with the new **Endpoint** ([steps 4–10](#chatgpt) above) and sign in again.
+4. Create the connector again with the new **Endpoint** ([steps 4–10](#example-the-web-agent-of-chatgpt) above) and sign in again.
 
 With a **named tunnel**, the URL does not change, so this is not needed.
 
@@ -255,7 +288,10 @@ In **Read-Only** mode, only the reading, searching and code-navigation tools are
 
 - The agent works freely only inside the selected project folder. Changing anything outside it requires your approval.
 - `.git`, `bin`, `obj`, `.vs` and `node_modules` are off limits.
-- Secret files are hidden from the agent — it cannot read, search, change or delete them: `.env` files, private keys and certificates (`*.pem`, `*.key`, `*.pfx`, `id_rsa`, ...), credential files (`.npmrc`, `.git-credentials`, `secrets.json`, ...). Templates such as `.env.example` stay visible. The list can be changed in `config.json` (see [docs/technical.md](docs/technical.md)).
+- Secret files are hidden from the agent. It cannot read, search, change or delete them.
+  - Hidden: `.env` files, private keys and certificates (`*.pem`, `*.key`, `*.pfx`, `id_rsa`, ...), credential files (`.npmrc`, `.git-credentials`, `secrets.json`, ...).
+  - Still visible: templates such as `.env.example`.
+  - To change the list, edit `config.json`. See [docs/technical.md](docs/technical.md).
 - Outside the project, credential folders (`.ssh`, `.aws`, `.azure`, ...) and the application's own folder are blocked.
 - Files that are not UTF-8 text (binary files, old code pages) are never rewritten by the agent, so they cannot be damaged by an edit.
 - Every change is recorded in an audit log.
@@ -323,15 +359,20 @@ If an update fails (download, antivirus, SmartScreen), the current version keeps
 
 ## 11. Uninstall
 
-Stop the server, press **Uninstall** and confirm.
+1. Press **Stop**.
+2. Press **Uninstall** and confirm.
 
-If the application no longer opens:
+If the application no longer opens, run this in PowerShell:
 
 ```powershell
 irm https://raw.githubusercontent.com/DomitorAI/mcp-code-editor/main/scripts/uninstall.ps1 | iex
 ```
 
-This removes `%LOCALAPPDATA%\mcp-code-editor\`, the desktop shortcut and temporary files. Your projects are never touched; Cloudflared is kept. No Windows service, registry entries or PATH changes are left behind.
+**What is removed:** `%LOCALAPPDATA%\mcp-code-editor\`, the desktop shortcut and the temporary files.
+
+**What stays:** your projects (never touched) and Cloudflared.
+
+No Windows service, registry entries or `PATH` changes are left behind.
 
 ## 12. Feedback
 
@@ -343,9 +384,17 @@ This removes `%LOCALAPPDATA%\mcp-code-editor\`, the desktop shortcut and tempora
 
 ## 13. License
 
-Free to use without limits, including commercial work and work for your employer or clients, on any number of computers and projects. You may share the unmodified installers free of charge. Selling mcp-code-editor itself, or offering it as a paid hosted service, needs the author's permission; what you build with it is yours. Provided as is, without warranty: whether and how to use it — including the changes the agent makes and the commands you approve — is your decision, so keep your work under version control. See [LICENSE](LICENSE).
+- Free to use without limits: also for commercial work and for your employer or clients, on any number of computers and projects.
+- You may share the unmodified installers, free of charge.
+- Selling mcp-code-editor itself, or offering it as a paid hosted service, needs the author's permission.
+- What you build with it is yours.
+- Provided as is, without warranty. Whether and how you use it is your decision, including the changes the agent makes and the commands you approve. Keep your work under version control.
 
-Need permission for something the license does not cover, or a version tailored to your project? [Open a **Contact request**](https://github.com/DomitorAI/mcp-code-editor/issues/new?template=contact_request.yml) — no project details needed (issues are public); you will get a reply on how to continue privately.
+See [LICENSE](LICENSE).
+
+Do you need a permission the license does not cover, or a version made for your project?
+[Open a **Contact request**](https://github.com/DomitorAI/mcp-code-editor/issues/new?template=contact_request.yml).
+Don't write project details there, because issues are public. You will get a reply on how to continue privately.
 
 ## 14. About
 
