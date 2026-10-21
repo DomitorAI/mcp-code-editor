@@ -1,0 +1,56 @@
+mcp-code-editor License
+Copyright (c) 2026 DomitorAI. All rights reserved.
+
+The author of mcp-code-editor ("the Author", publishing as DomitorAI) owns the
+copyright in the Software. The Author shares the Software free of charge, as
+knowledge put into a working application. This license lets you use it; it
+does not transfer any ownership of the Software to you.
+
+"Software": the mcp-code-editor application, installers, scripts and
+documentation published by the Author.
+
+1. Free use without limits. You may install and use the Software for any
+   purpose, including commercial work and work for your employer or clients,
+   free of charge, on any number of computers and projects.
+
+2. Sharing. You may share the unmodified installers and releases free of
+   charge, with this license.
+
+3. Resale only with the Author's permission. Without the Author's prior
+   written permission (an e-mail is enough) you may not sell, rent or
+   otherwise charge for the Software itself, alone or in a bundle whose main
+   value is the Software, nor offer it to others as a paid hosted service.
+   Work you do with the Software, and what you build with it, is yours.
+
+4. Integrity. You may not distribute modified versions of the Software, nor
+   present it as your own work. Decompiling the Software for interoperability
+   or troubleshooting is allowed.
+
+5. Notices. Keep this license and the copyright notices with any copy you
+   share. Third-party components included in the Software keep their own
+   licenses.
+
+6. Your data and your code. This license gives the Author no rights to your
+   projects, code or data. The Software runs on your computer and sends data
+   only to the services you choose to connect (for example your AI chat or
+   your MCP client).
+
+7. Your decision, no warranty. Nobody is required to use the Software. The
+   decision to use it, on which projects and with which permissions, is
+   yours alone, and so is the responsibility for that decision - including
+   the changes an AI agent makes in your files and the commands you approve.
+   Keep your work under version control or backed up. The Software is
+   provided free of charge, "AS IS", without warranty of any kind, express or
+   implied. It may contain errors. The Author has no obligation to provide
+   support, fixes or updates. You use the Software at your own risk, to the
+   extent permitted by applicable law.
+
+8. No liability. To the extent permitted by applicable law, the Author shall
+   not be liable for any damages (including loss of data, code, profit or
+   business) arising from the use of, or the inability to use, the Software.
+   This does not limit liability that cannot be limited by law (for example
+   for intent or gross negligence).
+
+Contact: https://github.com/DomitorAI/mcp-code-editor (open an issue, or use
+the contact given there) - for permissions, questions, and for the development
+of a version tailored to a specific project.
