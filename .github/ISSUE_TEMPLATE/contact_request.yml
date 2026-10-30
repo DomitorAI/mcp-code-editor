@@ -1,0 +1,27 @@
+name: Contact request
+description: Permission the license does not cover, or a version tailored to your project — we reply here with how to continue privately.
+title: "Contact request"
+labels: ["contact"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Issues are public.** Do not write project details, names, e-mail addresses, keys or anything confidential here —
+        just what kind of help you need. We answer in this issue with how to continue privately.
+  - type: dropdown
+    id: topic
+    attributes:
+      label: What is it about?
+      options:
+        - Permission the license does not cover
+        - A version tailored to my project
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: note
+    attributes:
+      label: A short note (optional, public)
+      placeholder: One or two sentences, without confidential details.
+    validations:
+      required: false
