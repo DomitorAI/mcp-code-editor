@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question, idea or feedback
+    url: https://github.com/DomitorAI/mcp-code-editor/discussions
+    about: How do I…?, what you think of MCP Code Editor, ideas — in Discussions.
+  - name: Security vulnerability (private)
+    url: https://github.com/DomitorAI/mcp-code-editor/security/advisories/new
+    about: Report it privately — only the maintainers see it. Never in a public issue.
